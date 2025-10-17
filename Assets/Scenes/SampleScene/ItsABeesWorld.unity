@@ -149,7 +149,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   flowerPrefab: {fileID: 1604695340004230401, guid: b19cb1e83a992441dbeea690ec9f1c1b, type: 3}
-  numFlowers: 20
+  numFlowers: 100
 --- !u!4 &1930677070
 Transform:
   m_ObjectHideFlags: 0
