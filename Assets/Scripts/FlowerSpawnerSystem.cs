@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using Random = Unity.Mathematics.Random;
 
+[UpdateInGroup(typeof(InitializationSystemGroup))] 
 public partial struct FlowerSpawnerSystem : ISystem
 {
     [BurstCompile]

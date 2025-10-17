@@ -6,6 +6,8 @@ using Unity.Transforms;
 using UnityEngine;
 using Random = Unity.Mathematics.Random;
 
+[UpdateAfter(typeof(FlowerSpawnerSystem))] 
+[UpdateInGroup(typeof(InitializationSystemGroup))] 
 public partial struct BeeSpawnerSystem : ISystem
 {
     [BurstCompile]
