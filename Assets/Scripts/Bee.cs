@@ -12,7 +12,7 @@ class Bee : MonoBehaviour
     public int homeHive;
 }
 
-class FishBaker : Baker<Bee>
+class BeeBaker : Baker<Bee>
 {
     public override void Bake(Bee authoring)
     {
