@@ -37,9 +37,29 @@ public partial struct BeeMoveJob : IJobEntity
 {
     public float deltaTime;
 
-    public void Execute(Entity entity, ref LocalTransform trans, in BeeData bee)
+    public void Execute(Entity entity, ref LocalTransform trans, ref BeeData bee)
+    {
+        switch (bee.state)
+        {
+            case BeeState.TravellingToFlower:
+            case BeeState.TravellingHome:
+                TravelBee(entity, ref trans, ref bee);
+                break;
+        }
+    }
+
+    private void TravelBee(Entity entity, ref LocalTransform trans, ref BeeData bee)
     {
         var between = bee.destination - trans.Position;
+        var distance = math.length(between);
+
+        if (distance <= 1)
+        {
+            if (bee.state == BeeState.TravellingToFlower) bee.state = BeeState.AtFlower;
+            else if (bee.state == BeeState.TravellingHome) bee.state = BeeState.AtHive;
+            return;
+        }
+
         var direction = math.normalize(between);
         var speed = math.length(bee.velocity);
 

@@ -23,7 +23,8 @@ class FishBaker : Baker<Bee>
             destination = authoring.destination,
             nectarCapacity = authoring.nectarCapacity,
             nectarCarried = authoring.nectarCarried,
-            homeHive = authoring.homeHive
+            homeHive = authoring.homeHive,
+            state = BeeState.TravellingToFlower
         });
     }
 }
@@ -35,4 +36,13 @@ public struct BeeData : IComponentData
     public float nectarCapacity;
     public float nectarCarried;
     public int homeHive;
+    public BeeState state;
+}
+
+public enum BeeState : byte
+{
+    TravellingToFlower,
+    TravellingHome,
+    AtFlower,
+    AtHive,
 }
