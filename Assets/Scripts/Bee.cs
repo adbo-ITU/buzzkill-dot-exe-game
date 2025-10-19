@@ -1,3 +1,4 @@
+using System;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -24,7 +25,8 @@ class BeeBaker : Baker<Bee>
             nectarCapacity = authoring.nectarCapacity,
             nectarCarried = authoring.nectarCarried,
             homeHive = authoring.homeHive,
-            state = BeeState.TravellingToFlower
+            state = BeeState.TravellingToFlower,
+            targetFlower = null
         });
     }
 }
@@ -33,6 +35,7 @@ public struct BeeData : IComponentData
 {
     public float3 velocity;
     public float3 destination;
+    public Nullable<Entity> targetFlower;
     public float nectarCapacity;
     public float nectarCarried;
     public int homeHive;
