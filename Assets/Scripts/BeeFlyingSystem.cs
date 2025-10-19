@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
+
 partial struct BeeFlyingSystem : ISystem
 {
     [BurstCompile]
@@ -28,8 +29,14 @@ partial struct BeeFlyingSystem : ISystem
             ecb = ecb,
             deltaTime = deltaTime,
         }.Schedule(state.Dependency);
+        
+        var flyToHiveJob = new BeeToHiveJob()
+        {
+            ecb = ecb,
+            deltaTime = deltaTime,
+        }.Schedule(flyToFlowerJob);
 
-        flyToFlowerJob.Complete();
+        flyToHiveJob.Complete();
     }
 
     [BurstCompile]
@@ -71,6 +78,24 @@ public partial struct BeeToFlowerJob : IJobEntity
         {
             ecb.RemoveComponent<TravellingToFlower>(chunkKey, entity);
             ecb.AddComponent(chunkKey, entity, new AtFlower());
+        }
+    }
+}
+
+[BurstCompile]
+public partial struct BeeToHiveJob : IJobEntity
+{
+    public EntityCommandBuffer.ParallelWriter ecb;
+    public float deltaTime;
+
+    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee, in TravellingToHome travellingToHome)
+    {
+        var moved = BeeFlyingSystem.TravelBee(ref trans, ref bee, deltaTime);
+
+        if (!moved)
+        {
+            ecb.RemoveComponent<TravellingToHome>(chunkKey, entity);
+            ecb.AddComponent(chunkKey, entity, new AtHive());
         }
     }
 }

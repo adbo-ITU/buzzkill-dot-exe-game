@@ -6,22 +6,31 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
+[UpdateAfter(typeof(BeeFlyingSystem))] 
 partial struct BeeAtFlowerSystem : ISystem
 {
+    private ComponentLookup<FlowerData> _flowerLookup;
+    
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        
+        _flowerLookup = state.GetComponentLookup<FlowerData>(isReadOnly: false);
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        var deltaTime = (float)SystemAPI.Time.DeltaTime;
+        EntityCommandBuffer.ParallelWriter ecb =
+            SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+        
+        _flowerLookup.Update(ref state);
         
         var atFlowerJob = new BeeAtFlowerJob
         {
-            deltaTime = deltaTime,
+            deltaTime = SystemAPI.Time.DeltaTime,
+            flowerLookup = _flowerLookup,
+            ecb = ecb
         }.Schedule(state.Dependency);
 
         atFlowerJob.Complete();
@@ -32,34 +41,47 @@ partial struct BeeAtFlowerSystem : ISystem
     {
         
     }
-    
-    [BurstCompile]
-    public static bool TravelBee(ref LocalTransform trans, ref BeeData bee, float deltaTime)
-    {
-        var between = bee.destination - trans.Position;
-        var distance = math.length(between);
-
-        if (distance <= 1)
-        {
-            return false;
-        }
-
-        var direction = math.normalize(between);
-
-        trans.Position += direction * bee.speed * deltaTime;
-
-        return true;
-    }
 }
 
 [BurstCompile]
 public partial struct BeeAtFlowerJob : IJobEntity
 {
     public float deltaTime;
+    public ComponentLookup<FlowerData> flowerLookup;
+    public EntityCommandBuffer.ParallelWriter ecb;
 
-    void Execute(Entity entity, ref LocalTransform trans, in AtFlower atFlower)
+    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, in AtFlower atFlower, ref BeeData bee)
     {
         var rot = math.mul(quaternion.RotateZ(2f * deltaTime), quaternion.RotateY(2f * deltaTime));
         trans.Rotation = math.mul(trans.Rotation, rot);
+
+        if (bee.targetFlower == null) return;
+        var targetFlower = (Entity) bee.targetFlower;
+
+        var flower = flowerLookup.GetRefRW(targetFlower);
+
+        var maxNectarToTake = 2f * deltaTime;
+        var nectarBeeCanTake = math.min(maxNectarToTake, bee.nectarCapacity - bee.nectarCarried);
+
+        if (flower.ValueRW.nectarAmount > 0)
+        {
+            var nectarTaken = math.min(flower.ValueRW.nectarAmount, nectarBeeCanTake);
+            flower.ValueRW.nectarAmount -= nectarTaken;
+            bee.nectarCarried += nectarTaken;
+        }
+
+        var flowerIsEmpty = flower.ValueRW.nectarAmount <= 0.01;
+        var beeIsSaturated = bee.nectarCapacity - bee.nectarCarried <= 0.01;
+
+        if (flowerIsEmpty || beeIsSaturated)
+        {
+            ecb.RemoveComponent<AtFlower>(chunkKey, entity);
+            
+            bee.targetFlower = null;
+            bee.destination = math.float3(15, 25, 15); // TODO: set to hive position
+
+            // TODO: find a new flower to visit before going home in case the bee is not saturated
+            ecb.AddComponent<TravellingToHome>(chunkKey, entity);
+        }
     }
 }
