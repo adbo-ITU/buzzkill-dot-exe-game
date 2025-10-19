@@ -6,7 +6,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
-partial struct BeeFlyingSystem : ISystem
+partial struct BeeAtFlowerSystem : ISystem
 {
     [BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -17,19 +17,14 @@ partial struct BeeFlyingSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        EntityCommandBuffer.ParallelWriter ecb =
-            SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
-
         var deltaTime = (float)SystemAPI.Time.DeltaTime;
-
-        var flyToFlowerJob = new BeeToFlowerJob
+        
+        var atFlowerJob = new BeeAtFlowerJob
         {
-            ecb = ecb,
             deltaTime = deltaTime,
         }.Schedule(state.Dependency);
 
-        flyToFlowerJob.Complete();
+        atFlowerJob.Complete();
     }
 
     [BurstCompile]
@@ -58,19 +53,13 @@ partial struct BeeFlyingSystem : ISystem
 }
 
 [BurstCompile]
-public partial struct BeeToFlowerJob : IJobEntity
+public partial struct BeeAtFlowerJob : IJobEntity
 {
-    public EntityCommandBuffer.ParallelWriter ecb;
     public float deltaTime;
 
-    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee, in TravellingToFlower travellingToFlower)
+    void Execute(Entity entity, ref LocalTransform trans, in AtFlower atFlower)
     {
-        var moved = BeeFlyingSystem.TravelBee(ref trans, ref bee, deltaTime);
-
-        if (!moved)
-        {
-            ecb.RemoveComponent<TravellingToFlower>(chunkKey, entity);
-            ecb.AddComponent(chunkKey, entity, new AtFlower());
-        }
+        var rot = math.mul(quaternion.RotateZ(2f * deltaTime), quaternion.RotateY(2f * deltaTime));
+        trans.Rotation = math.mul(trans.Rotation, rot);
     }
 }
