@@ -18,6 +18,7 @@ class FlowerBaker : Baker<Flower>
         {
             nectarCapacity = authoring.nectarCapacity,
             nectarAmount = authoring.nectarAmount,
+            position = authoring.position,
         });
     }
 }
@@ -26,4 +27,5 @@ public struct FlowerData : IComponentData
 {
     public float nectarCapacity;
     public float nectarAmount;
+    public float3 position;
 }

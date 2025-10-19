@@ -50,7 +50,7 @@ public partial struct FlowerSpawnJob : IJobEntity
                 {
                     nectarCapacity = 10,
                     nectarAmount = 10,
-
+                    position = pos,
                 });
                 ecb.SetComponent(chunkKey, e, LocalTransform.FromPosition(pos));
         }

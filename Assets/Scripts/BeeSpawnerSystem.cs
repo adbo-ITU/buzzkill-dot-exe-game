@@ -58,6 +58,11 @@ public partial struct BeeSpawnJob : IJobEntity
 
         for (float i = 0; i < spawner.numBees; i++)
         {
+            float x = rnd.NextFloat(0f, 50f);
+            float y = rnd.NextFloat(10f, 30f);
+            float z = rnd.NextFloat(0f, 50f);
+            float3 pos = new float3(x, y,z);
+
             var flowerIndex = rnd.NextInt(numFlowers);
             var (flowerTrans, flowerEntity) =  flowers[flowerIndex];
 
@@ -72,6 +77,7 @@ public partial struct BeeSpawnJob : IJobEntity
                 state = BeeState.TravellingToFlower,
                 targetFlower = flowerEntity,
             });
+            ecb.SetComponent(chunkKey, e, LocalTransform.FromPosition(pos));
         }
     }
 }
