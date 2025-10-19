@@ -39,13 +39,12 @@ public partial struct FlowerSpawnJob : IJobEntity
     public void Execute([ChunkIndexInQuery] int chunkKey, ref FlowerSpawner spawner, Entity entity)
     {
         var rnd = new Random(42);
-        var n = spawner.numFlower;
-        for (int y = 0; y < n; y++)
+        for (float i = 0; i < spawner.numFlower; i++)
         {
-            for (int x = 0; x < n; x++)
-            {
+                float x = rnd.NextFloat(0f, 50f);
+                float z = rnd.NextFloat(0f, 50f);
                 var e = ecb.Instantiate(chunkKey, spawner.flowerPrefab);
-                float3 pos = new float3(x * 2f, 0f, y * 2f); // TODO change to pretty
+                float3 pos = new float3(x, 0,z); 
                 
                 ecb.AddComponent(chunkKey, e, new FlowerData
                 {
@@ -54,7 +53,6 @@ public partial struct FlowerSpawnJob : IJobEntity
 
                 });
                 ecb.SetComponent(chunkKey, e, LocalTransform.FromPosition(pos));
-            }
         }
     }
 }
