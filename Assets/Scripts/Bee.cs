@@ -6,7 +6,7 @@ using UnityEngine;
 class Bee : MonoBehaviour
 {
     public float3 position;
-    public float3 velocity;
+    public float speed;
     public float3 destination;
     public float nectarCapacity;
     public float nectarCarried;
@@ -20,7 +20,7 @@ class BeeBaker : Baker<Bee>
         var entity = GetEntity(TransformUsageFlags.Dynamic);
         AddComponent(entity, new BeeData
         {
-            velocity = authoring.velocity,
+            speed = authoring.speed,
             destination = authoring.destination,
             nectarCapacity = authoring.nectarCapacity,
             nectarCarried = authoring.nectarCarried,
@@ -33,7 +33,7 @@ class BeeBaker : Baker<Bee>
 
 public struct BeeData : IComponentData
 {
-    public float3 velocity;
+    public float speed;
     public float3 destination;
     public Nullable<Entity> targetFlower;
     public float nectarCapacity;

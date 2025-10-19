@@ -55,9 +55,8 @@ partial struct BeeFlyingSystem : ISystem
         }
 
         var direction = math.normalize(between);
-        var speed = math.length(bee.velocity);
 
-        trans.Position += direction * speed * deltaTime;
+        trans.Position += direction * bee.speed * deltaTime;
 
         return true;
     }
