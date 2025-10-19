@@ -4,7 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
+using UnityEngine.Rendering.Universal;
 using Random = Unity.Mathematics.Random;
 
 [UpdateAfter(typeof(FlowerSpawnerSystem))] 
@@ -20,27 +20,31 @@ public partial struct BeeSpawnerSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        state.Enabled = false;
-        
-        EntityCommandBuffer.ParallelWriter ecb =
-            SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem .Singleton>()
-                .CreateCommandBuffer(state.WorldUnmanaged ).AsParallelWriter();
-
         var i = 0;
-        var flowers = new NativeArray<(LocalTransform, Entity)>(1000, Allocator.TempJob);
-        foreach ((RefRO<FlowerData> flower, RefRO<LocalTransform> trans, Entity entity) in SystemAPI.Query<RefRO<FlowerData>, RefRO<LocalTransform>>().WithEntityAccess()) 
+        var flowers = new NativeArray<(FlowerData, Entity)>(1000, Allocator.TempJob);
+        foreach ((RefRO<FlowerData> flower, Entity entity) in SystemAPI.Query<RefRO<FlowerData>>().WithEntityAccess()) 
         {
-            flowers[i++] = (trans.ValueRO, entity);
+            flowers[i++] = (flower.ValueRO, entity);
         }
 
-        var handle = new BeeSpawnJob
+        if (i > 0)
         {
-            ecb = ecb,
-            flowers = flowers,
-            numFlowers = i
-        }.Schedule(state.Dependency);
+            state.Enabled = false;
+            
+            EntityCommandBuffer.ParallelWriter ecb =
+                SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+                    .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
 
-        handle.Complete();
+            var handle = new BeeSpawnJob
+            {
+                ecb = ecb,
+                flowers = flowers,
+                numFlowers = i
+            }.Schedule(state.Dependency);
+
+            handle.Complete();
+        }
+
         flowers.Dispose();
     }
 }
@@ -49,7 +53,7 @@ public partial struct BeeSpawnerSystem : ISystem
 public partial struct BeeSpawnJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecb;
-    public NativeArray<(LocalTransform, Entity)> flowers;
+    public NativeArray<(FlowerData, Entity)> flowers;
     public int numFlowers;
 
     public void Execute([ChunkIndexInQuery] int chunkKey, ref BeeSpawner spawner, Entity entity)
@@ -64,13 +68,13 @@ public partial struct BeeSpawnJob : IJobEntity
             float3 pos = new float3(x, y,z);
 
             var flowerIndex = rnd.NextInt(numFlowers);
-            var (flowerTrans, flowerEntity) =  flowers[flowerIndex];
+            var (flower, flowerEntity) = flowers[flowerIndex];
 
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
             ecb.AddComponent(chunkKey, e, new BeeData
             {
                 velocity = math.float3(10, 0, 0),
-                destination = flowerTrans.Position,
+                destination = flower.position,
                 nectarCapacity = 10,
                 nectarCarried = 0,
                 homeHive = 0,
