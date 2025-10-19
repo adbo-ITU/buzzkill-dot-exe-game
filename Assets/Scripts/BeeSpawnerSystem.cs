@@ -3,8 +3,6 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
-using UnityEngine.Rendering.Universal;
 using Random = Unity.Mathematics.Random;
 
 [UpdateAfter(typeof(FlowerSpawnerSystem))] 
@@ -15,35 +13,33 @@ public partial struct BeeSpawnerSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<BeeSpawner>();
+        state.RequireForUpdate<FlowerData>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        state.Enabled = false;
+        
         var i = 0;
         var flowers = new NativeArray<(FlowerData, Entity)>(1000, Allocator.TempJob);
         foreach ((RefRO<FlowerData> flower, Entity entity) in SystemAPI.Query<RefRO<FlowerData>>().WithEntityAccess()) 
         {
             flowers[i++] = (flower.ValueRO, entity);
         }
+        
+        EntityCommandBuffer.ParallelWriter ecb =
+            SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
 
-        if (i > 0)
+        var handle = new BeeSpawnJob
         {
-            state.Enabled = false;
-            
-            EntityCommandBuffer.ParallelWriter ecb =
-                SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                    .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+            ecb = ecb,
+            flowers = flowers,
+            numFlowers = i
+        }.Schedule(state.Dependency);
 
-            var handle = new BeeSpawnJob
-            {
-                ecb = ecb,
-                flowers = flowers,
-                numFlowers = i
-            }.Schedule(state.Dependency);
-
-            handle.Complete();
-        }
+        handle.Complete();
 
         flowers.Dispose();
     }
