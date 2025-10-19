@@ -46,10 +46,13 @@ public partial struct FlowerSpawnJob : IJobEntity
                 var e = ecb.Instantiate(chunkKey, spawner.flowerPrefab);
                 float3 pos = new float3(x, 0,z); 
                 
+                var capacity = rnd.NextFloat(5f, 20f);
+
+                
                 ecb.AddComponent(chunkKey, e, new FlowerData
                 {
-                    nectarCapacity = 10,
-                    nectarAmount = 10,
+                    nectarCapacity = capacity,
+                    nectarAmount = capacity,
                     position = pos,
                 });
                 ecb.SetComponent(chunkKey, e, LocalTransform.FromPosition(pos));
