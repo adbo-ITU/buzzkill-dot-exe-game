@@ -25,9 +25,9 @@ class BeeBaker : Baker<Bee>
             nectarCapacity = authoring.nectarCapacity,
             nectarCarried = authoring.nectarCarried,
             homeHive = authoring.homeHive,
-            state = BeeState.TravellingToFlower,
             targetFlower = null
         });
+        AddComponent(entity, new TravellingToFlower());
     }
 }
 
@@ -39,13 +39,9 @@ public struct BeeData : IComponentData
     public float nectarCapacity;
     public float nectarCarried;
     public int homeHive;
-    public BeeState state;
 }
 
-public enum BeeState : byte
-{
-    TravellingToFlower,
-    TravellingHome,
-    AtFlower,
-    AtHive,
-}
+public struct TravellingToFlower : IComponentData {}
+public struct TravellingToHome : IComponentData {}
+public struct AtFlower : IComponentData {}
+public struct AtHive : IComponentData {}

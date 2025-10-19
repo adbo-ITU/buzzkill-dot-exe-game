@@ -74,9 +74,9 @@ public partial struct BeeSpawnJob : IJobEntity
                 nectarCapacity = 10,
                 nectarCarried = 0,
                 homeHive = 0,
-                state = BeeState.TravellingToFlower,
                 targetFlower = flowerEntity,
             });
+            ecb.SetComponent(chunkKey, e, new TravellingToFlower());
             ecb.SetComponent(chunkKey, e, LocalTransform.FromPosition(pos));
         }
     }
