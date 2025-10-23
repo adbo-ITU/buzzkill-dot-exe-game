@@ -41,21 +41,24 @@ public partial struct FlowerSpawnJob : IJobEntity
         var rnd = new Random(42);
         for (float i = 0; i < spawner.numFlower; i++)
         {
+                const float flowerHeight = 5f;
+            
                 float x = rnd.NextFloat(0f, 50f);
                 float z = rnd.NextFloat(0f, 50f);
                 var e = ecb.Instantiate(chunkKey, spawner.flowerPrefab);
-                float3 pos = new float3(x, 0,z); 
+                float3 pos = new float3(x, 0, z); 
                 
                 var capacity = rnd.NextFloat(5f, 20f);
-
                 
                 ecb.AddComponent(chunkKey, e, new FlowerData
                 {
                     nectarCapacity = capacity,
                     nectarAmount = capacity,
-                    position = pos,
+                    position = pos + new float3(0, flowerHeight * 0.8f, 0)
                 });
-                ecb.SetComponent(chunkKey, e, LocalTransform.FromPosition(pos));
+
+                var transform = LocalTransform.FromPosition(pos).WithScale(flowerHeight);
+                ecb.SetComponent(chunkKey, e, transform);
         }
     }
 }

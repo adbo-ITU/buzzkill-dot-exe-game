@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cecf302d9b7841578eb1dcf2db5ec4f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  flowerPrefab: {fileID: 1604695340004230401, guid: b19cb1e83a992441dbeea690ec9f1c1b, type: 3}
+  flowerPrefab: {fileID: 9069948650388196236, guid: 6ee7ff501548bbd48ac085a1c22904aa, type: 3}
   numFlowers: 100
 --- !u!4 &1930677070
 Transform:
