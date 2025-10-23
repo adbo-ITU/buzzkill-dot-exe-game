@@ -39,15 +39,27 @@ public partial struct FlowerSpawnJob : IJobEntity
     public void Execute([ChunkIndexInQuery] int chunkKey, ref FlowerSpawner spawner, Entity entity)
     {
         var rnd = new Random(42);
+
+        var prefabs = new []
+        {
+            spawner.flowerPrefabA,
+            spawner.flowerPrefabB,
+            spawner.flowerPrefabC,
+            spawner.flowerPrefabD,
+            spawner.flowerPrefabE,
+        };
+        
         for (float i = 0; i < spawner.numFlower; i++)
         {
                 const float flowerHeight = 5f;
             
                 float x = rnd.NextFloat(0f, 50f);
                 float z = rnd.NextFloat(0f, 50f);
-                var e = ecb.Instantiate(chunkKey, spawner.flowerPrefab);
                 float3 pos = new float3(x, 0, z); 
-                
+
+                var prefab = prefabs[rnd.NextInt(prefabs.Length)];
+                var e = ecb.Instantiate(chunkKey, prefab);
+
                 var capacity = rnd.NextFloat(5f, 20f);
                 
                 ecb.AddComponent(chunkKey, e, new FlowerData

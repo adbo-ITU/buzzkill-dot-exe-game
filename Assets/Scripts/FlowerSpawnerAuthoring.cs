@@ -3,7 +3,11 @@ using UnityEngine;
 
 public class FlowerSpawnerAuthoring : MonoBehaviour
 {
-    public GameObject flowerPrefab;
+    public GameObject flowerPrefabA;
+    public GameObject flowerPrefabB;
+    public GameObject flowerPrefabC;
+    public GameObject flowerPrefabD;
+    public GameObject flowerPrefabE;
     public int numFlowers;
 
     class Baker : Baker<FlowerSpawnerAuthoring>
@@ -13,7 +17,11 @@ public class FlowerSpawnerAuthoring : MonoBehaviour
             var entity = GetEntity(authoring, TransformUsageFlags.None);
             var spawner = new FlowerSpawner
             {
-                flowerPrefab = GetEntity(authoring.flowerPrefab, TransformUsageFlags.Dynamic),
+                flowerPrefabA = GetEntity(authoring.flowerPrefabA, TransformUsageFlags.Dynamic),
+                flowerPrefabB = GetEntity(authoring.flowerPrefabB, TransformUsageFlags.Dynamic),
+                flowerPrefabC = GetEntity(authoring.flowerPrefabC, TransformUsageFlags.Dynamic),
+                flowerPrefabD = GetEntity(authoring.flowerPrefabD, TransformUsageFlags.Dynamic),
+                flowerPrefabE = GetEntity(authoring.flowerPrefabE, TransformUsageFlags.Dynamic),
                 numFlower = authoring.numFlowers,
             };
             AddComponent(entity, spawner);
@@ -23,6 +31,10 @@ public class FlowerSpawnerAuthoring : MonoBehaviour
 
 public struct FlowerSpawner : IComponentData
 {
-    public Entity flowerPrefab;
+    public Entity flowerPrefabA;
+    public Entity flowerPrefabB;
+    public Entity flowerPrefabC;
+    public Entity flowerPrefabD;
+    public Entity flowerPrefabE;
     public int numFlower;
 }
