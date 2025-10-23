@@ -66,7 +66,7 @@ public partial struct FlowerSpawnJob : IJobEntity
                 {
                     nectarCapacity = capacity,
                     nectarAmount = capacity,
-                    position = pos + new float3(0, flowerHeight * 0.8f, 0)
+                    position = pos + new float3(0, flowerHeight, 0)
                 });
 
                 var transform = LocalTransform.FromPosition(pos).WithScale(flowerHeight);
