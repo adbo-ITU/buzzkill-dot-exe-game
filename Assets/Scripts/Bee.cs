@@ -10,7 +10,6 @@ class Bee : MonoBehaviour
     public float3 destination;
     public float nectarCapacity;
     public float nectarCarried;
-    public int homeHive;
 }
 
 class BeeBaker : Baker<Bee>
@@ -24,10 +23,10 @@ class BeeBaker : Baker<Bee>
             destination = authoring.destination,
             nectarCapacity = authoring.nectarCapacity,
             nectarCarried = authoring.nectarCarried,
-            homeHive = authoring.homeHive,
-            targetFlower = null
+            targetFlower = null,
+            homeHive = null
         });
-        AddComponent(entity, new TravellingToFlower());
+        AddComponent(entity, new TravellingToFlower()); //  TODO change this to at hive
     }
 }
 
@@ -38,7 +37,7 @@ public struct BeeData : IComponentData
     public Nullable<Entity> targetFlower;
     public float nectarCapacity;
     public float nectarCarried;
-    public int homeHive;
+    public Nullable<Entity> homeHive;
 }
 
 public struct TravellingToFlower : IComponentData {}
