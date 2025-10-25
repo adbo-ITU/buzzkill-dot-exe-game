@@ -31,7 +31,7 @@ public partial struct BeeSpawnerSystem : ISystem
         }
         
         var j = 0;
-        var hives = new NativeArray<(HiveData, Entity)>(100, Allocator.TempJob);
+        var hives = new NativeArray<(HiveData, Entity)>(3, Allocator.TempJob); // todo: get correct number of hives from where?
         foreach ((RefRO<HiveData> hive, Entity entity) in SystemAPI.Query<RefRO<HiveData>>().WithEntityAccess()) 
         {
             hives[j++] = (hive.ValueRO, entity);
@@ -80,7 +80,7 @@ public partial struct BeeSpawnJob : IJobEntity
             var (flower, flowerEntity) = flowers[flowerIndex];
             // modulus to find hive to be home
             var hiveIndex = i % numHives; 
-            var (hive, hiveEntity) = hives[hiveIndex];
+            var (hive, hiveEntity) = hives[hiveIndex]; 
             
 
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
@@ -93,8 +93,8 @@ public partial struct BeeSpawnJob : IJobEntity
                 homeHive = hiveEntity,
                 targetFlower = flowerEntity,
             });
-            ecb.SetComponent(chunkKey, e, new TravellingToFlower());
-            ecb.SetComponent(chunkKey, e, LocalTransform.FromPosition(pos));
+            ecb.SetComponent(chunkKey, e, new TravellingToFlower()); // TODO: change to at hive, didnt work properly tho 
+            ecb.SetComponent(chunkKey, e, LocalTransform.FromPosition(hive.position));
         }
     }
 }
