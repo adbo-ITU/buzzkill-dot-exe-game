@@ -93,7 +93,7 @@ public partial struct BeeSpawnJob : IJobEntity
                 homeHive = hiveEntity,
                 targetFlower = flowerEntity,
             });
-            ecb.SetComponent(chunkKey, e, new TravellingToFlower()); // TODO: change to at hive, didnt work properly tho 
+            ecb.SetComponent(chunkKey, e, new TravellingToFlower()); // TODO: change to at hive, when find new flower logic is done
             ecb.SetComponent(chunkKey, e, LocalTransform.FromPosition(hive.position));
         }
     }
