@@ -54,17 +54,18 @@ public partial struct BeeAtHiveJob : IJobEntity
         var hive = (Entity) bee.homeHive;
         if (!hiveLookup.HasComponent(hive)) return;
         var hiveData = hiveLookup[hive];
-        var rot = math.mul(quaternion.RotateZ(2f * deltaTime), quaternion.RotateY(2f * deltaTime));
         
         var maxNectarToGive = 2f * deltaTime;
-        var nectarGiven = math.min(bee.nectarCarried, maxNectarToGive);
+        var nectarGiven = math.max(bee.nectarCarried, maxNectarToGive);
         bee.nectarCarried -= nectarGiven;
         hiveData.nectarAmount += nectarGiven;
         hiveLookup[hive] = hiveData;
         
         var beeIsDepleted = bee.nectarCarried <= 0.01;
         if (!beeIsDepleted) return;
+        
         ecb.RemoveComponent<AtHive>(chunkKey, entity);
+        // TODO: find flower entity to go to
         ecb.AddComponent(chunkKey, entity, new TravellingToFlower());
         
     }
