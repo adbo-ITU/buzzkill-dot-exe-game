@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class HiveSpawnerAuthoring : MonoBehaviour
 {
-    public GameObject HivePrefab;
+    public GameObject hivePrefab;
     public int numHives;
 
     class Baker : Baker<HiveSpawnerAuthoring>
@@ -13,8 +13,8 @@ public class HiveSpawnerAuthoring : MonoBehaviour
             var entity = GetEntity(authoring, TransformUsageFlags.None);
             var spawner = new HiveSpawner
             {
-                HivePrefab = GetEntity(authoring.HivePrefab, TransformUsageFlags.Dynamic),
-                numHive = authoring.numHives,
+                hivePrefab = GetEntity(authoring.hivePrefab, TransformUsageFlags.Dynamic),
+                numHives = authoring.numHives,
             };
             AddComponent(entity, spawner);
         }
@@ -23,6 +23,6 @@ public class HiveSpawnerAuthoring : MonoBehaviour
 
 public struct HiveSpawner : IComponentData
 {
-    public Entity HivePrefab;
-    public int numHive;
+    public Entity hivePrefab;
+    public int numHives;
 }

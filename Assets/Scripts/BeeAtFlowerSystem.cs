@@ -10,11 +10,13 @@ using UnityEngine;
 partial struct BeeAtFlowerSystem : ISystem
 {
     private ComponentLookup<FlowerData> _flowerLookup;
+    private ComponentLookup<HiveData> _hiveLookup;
     
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         _flowerLookup = state.GetComponentLookup<FlowerData>(isReadOnly: false);
+        _hiveLookup = state.GetComponentLookup<HiveData>(isReadOnly: false);
     }
 
     [BurstCompile]
@@ -25,11 +27,13 @@ partial struct BeeAtFlowerSystem : ISystem
                 .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
         
         _flowerLookup.Update(ref state);
+        _hiveLookup.Update(ref state);
         
         var atFlowerJob = new BeeAtFlowerJob
         {
             deltaTime = SystemAPI.Time.DeltaTime,
             flowerLookup = _flowerLookup,
+            hiveLookup = _hiveLookup,
             ecb = ecb
         }.Schedule(state.Dependency);
 
@@ -48,6 +52,9 @@ public partial struct BeeAtFlowerJob : IJobEntity
 {
     public float deltaTime;
     public ComponentLookup<FlowerData> flowerLookup;
+    // marked as read-only hive lookup 
+    public ComponentLookup<HiveData> hiveLookup;
+    
     public EntityCommandBuffer.ParallelWriter ecb;
 
     void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, in AtFlower atFlower, ref BeeData bee)
@@ -78,7 +85,10 @@ public partial struct BeeAtFlowerJob : IJobEntity
             ecb.RemoveComponent<AtFlower>(chunkKey, entity);
             
             bee.targetFlower = null;
-            bee.destination = math.float3(15, 25, 15); // TODO: set to hive position
+            
+            if (bee.homeHive == null) return; // TODO: handle no hive case
+            var hive =  (Entity) bee.homeHive;
+            bee.destination = hiveLookup.GetRefRO(hive).ValueRO.position;
 
             // TODO: find a new flower to visit before going home in case the bee is not saturated
             ecb.AddComponent<TravellingToHome>(chunkKey, entity);

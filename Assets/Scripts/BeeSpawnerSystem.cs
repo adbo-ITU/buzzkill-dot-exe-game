@@ -6,6 +6,7 @@ using Unity.Transforms;
 using Random = Unity.Mathematics.Random;
 
 [UpdateAfter(typeof(FlowerSpawnerSystem))] 
+[UpdateAfter(typeof(HiveSpawnerSystem))]
 [UpdateInGroup(typeof(InitializationSystemGroup))] 
 public partial struct BeeSpawnerSystem : ISystem
 {
@@ -14,6 +15,7 @@ public partial struct BeeSpawnerSystem : ISystem
     {
         state.RequireForUpdate<BeeSpawner>();
         state.RequireForUpdate<FlowerData>();
+        state.RequireForUpdate<HiveData>();
     }
 
     [BurstCompile]
@@ -28,6 +30,13 @@ public partial struct BeeSpawnerSystem : ISystem
             flowers[i++] = (flower.ValueRO, entity);
         }
         
+        var j = 0;
+        var hives = new NativeArray<(HiveData, Entity)>(100, Allocator.TempJob);
+        foreach ((RefRO<HiveData> hive, Entity entity) in SystemAPI.Query<RefRO<HiveData>>().WithEntityAccess()) 
+        {
+            hives[j++] = (hive.ValueRO, entity);
+        }
+        
         EntityCommandBuffer.ParallelWriter ecb =
             SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
                 .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
@@ -36,6 +45,8 @@ public partial struct BeeSpawnerSystem : ISystem
         {
             ecb = ecb,
             flowers = flowers,
+            hives = hives,
+            numHives = hives.Length,
             numFlowers = i
         }.Schedule(state.Dependency);
 
@@ -50,13 +61,15 @@ public partial struct BeeSpawnJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecb;
     public NativeArray<(FlowerData, Entity)> flowers;
+    public NativeArray<(HiveData, Entity)> hives;
     public int numFlowers;
+    public int numHives;
 
     public void Execute([ChunkIndexInQuery] int chunkKey, ref BeeSpawner spawner, Entity entity)
     {
         var rnd = new Random(42);
 
-        for (float i = 0; i < spawner.numBees; i++)
+        for (int i = 0; i < spawner.numBees; i++)
         {
             float x = rnd.NextFloat(0f, 50f);
             float y = rnd.NextFloat(10f, 30f);
@@ -65,6 +78,10 @@ public partial struct BeeSpawnJob : IJobEntity
 
             var flowerIndex = rnd.NextInt(numFlowers);
             var (flower, flowerEntity) = flowers[flowerIndex];
+            // modulus to find hive to be home
+            var hiveIndex = i % numHives; 
+            var (hive, hiveEntity) = hives[hiveIndex];
+            
 
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
             ecb.AddComponent(chunkKey, e, new BeeData
@@ -73,7 +90,7 @@ public partial struct BeeSpawnJob : IJobEntity
                 destination = flower.position,
                 nectarCapacity = 10,
                 nectarCarried = 0,
-                homeHive = 0,
+                homeHive = hiveEntity,
                 targetFlower = flowerEntity,
             });
             ecb.SetComponent(chunkKey, e, new TravellingToFlower());

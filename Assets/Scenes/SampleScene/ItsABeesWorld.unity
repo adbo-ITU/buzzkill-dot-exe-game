@@ -200,6 +200,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   beePrefab: {fileID: 4615560902193265911, guid: a1c51983d2f3643f49870c8dadadc872, type: 3}
   numBees: 10
+  numHives: 3
 --- !u!4 &2039319760
 Transform:
   m_ObjectHideFlags: 0
@@ -244,7 +245,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15f687067f804588bff2c82a7aa5f31f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  HivePrefab: {fileID: 2381494450241151771, guid: 2edc800119c124d50b911dbea7447e69, type: 3}
+  hivePrefab: {fileID: 2381494450241151771, guid: 2edc800119c124d50b911dbea7447e69, type: 3}
   numHives: 3
 --- !u!4 &2083833366
 Transform:

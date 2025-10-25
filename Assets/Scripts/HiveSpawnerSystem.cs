@@ -40,20 +40,16 @@ public partial struct HiveSpawnJob : IJobEntity
     {
         var rnd = new Random(42);
 
-        var prefabs = new []
-        {
-            spawner.HivePrefab
-        };
+        var prefab = spawner.hivePrefab;
         
-        for (float i = 0; i < spawner.numHive; i++)
+        for (float i = 0; i < spawner.numHives; i++)
         {
-                const float HiveHeight = 5f;
+                const float hiveHeight = 5f;
             
-                float x = rnd.NextFloat(0f, 50f);
+                float x = rnd.NextFloat(0f, 50f); // TODO: adjust to world size
                 float z = rnd.NextFloat(0f, 50f);
                 float3 pos = new float3(x, 0, z); 
 
-                var prefab = prefabs[rnd.NextInt(prefabs.Length)];
                 var e = ecb.Instantiate(chunkKey, prefab);
 
                 var capacity = rnd.NextFloat(5f, 20f);
@@ -61,10 +57,10 @@ public partial struct HiveSpawnJob : IJobEntity
                 ecb.AddComponent(chunkKey, e, new HiveData
                 {
                     nectarAmount = capacity,
-                    position = pos + new float3(0, HiveHeight, 0)
+                    position = pos + new float3(0, hiveHeight, 0)
                 });
 
-                var transform = LocalTransform.FromPosition(pos).WithScale(HiveHeight);
+                var transform = LocalTransform.FromPosition(pos).WithScale(hiveHeight);
                 ecb.SetComponent(chunkKey, e, transform);
         }
     }
