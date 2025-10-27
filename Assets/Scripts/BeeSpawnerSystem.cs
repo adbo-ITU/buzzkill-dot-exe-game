@@ -90,7 +90,7 @@ public partial struct BeeSpawnJob : IJobEntity
             {
                 speed = 15,
                 destination = flower.position,
-                nectarCapacity = 10,
+                nectarCapacity = 40,
                 nectarCarried = 0,
                 homeHive = hiveEntity,
                 targetFlower = flowerEntity,

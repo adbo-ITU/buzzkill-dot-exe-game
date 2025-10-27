@@ -6,6 +6,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using Random = Unity.Mathematics.Random;
 
 [UpdateAfter(typeof(BeeFlyingSystem))] 
 [UpdateAfter(typeof(BeeAtHiveSystem))]
@@ -32,12 +33,16 @@ partial struct BeeAtFlowerSystem : ISystem
         _flowerLookup.Update(ref state);
         _hiveLookup.Update(ref state);
         
+        var flowerManager = SystemAPI.GetSingleton<FlowerManager>();
+        
         var atFlowerJob = new BeeAtFlowerJob
         {
+            time = SystemAPI.Time.ElapsedTime,
             deltaTime = SystemAPI.Time.DeltaTime,
             flowerLookup = _flowerLookup,
             hiveLookup = _hiveLookup,
-            ecb = ecb
+            ecb = ecb,
+            flowerManager = flowerManager
         }.Schedule(state.Dependency);
 
         atFlowerJob.Complete();
@@ -53,9 +58,11 @@ partial struct BeeAtFlowerSystem : ISystem
 [BurstCompile]
 public partial struct BeeAtFlowerJob : IJobEntity
 {
+    public double time;
     public float deltaTime;
     public ComponentLookup<FlowerData> flowerLookup;
     [ReadOnly] public ComponentLookup<HiveData> hiveLookup;
+    [ReadOnly] public FlowerManager flowerManager;
     
     public EntityCommandBuffer.ParallelWriter ecb;
 
@@ -94,7 +101,18 @@ public partial struct BeeAtFlowerJob : IJobEntity
             bee.destination = hiveLookup.GetRefRO(hive).ValueRO.position;
 
             // TODO: find a new flower to visit before going home in case the bee is not saturated
-            ecb.AddComponent<TravellingToHome>(chunkKey, entity);
+            if (beeIsSaturated)
+            {
+                ecb.AddComponent<TravellingToHome>(chunkKey, entity);
+            }
+            else
+            {
+                var rng = new Random((uint)(time * 10_000));
+                var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(rng);
+                bee.destination = flowerData.position;
+                bee.targetFlower = flowerEntity;
+                ecb.AddComponent(chunkKey, entity, new TravellingToFlower());
+            }
         }
     }
 }
