@@ -8,6 +8,7 @@ using Unity.Transforms;
 using UnityEngine;
 
 [UpdateAfter(typeof(BeeFlyingSystem))] 
+[UpdateAfter(typeof(BeeAtHiveSystem))]
 partial struct BeeAtFlowerSystem : ISystem
 {
     private ComponentLookup<FlowerData> _flowerLookup;
@@ -16,6 +17,7 @@ partial struct BeeAtFlowerSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
+        state.RequireForUpdate<FlowerManager>();
         _flowerLookup = state.GetComponentLookup<FlowerData>(isReadOnly: false);
         _hiveLookup = state.GetComponentLookup<HiveData>(isReadOnly: true);
     }
@@ -61,9 +63,10 @@ public partial struct BeeAtFlowerJob : IJobEntity
     {
         var rot = math.mul(quaternion.RotateZ(2f * deltaTime), quaternion.RotateY(2f * deltaTime));
         trans.Rotation = math.mul(trans.Rotation, rot);
-
-        if (bee.targetFlower == null) return;
-        var targetFlower = (Entity) bee.targetFlower;
+        
+        var targetFlower = bee.targetFlower;
+        if (targetFlower == Entity.Null) return;
+        if (targetFlower.Index < 0) return; // TODO / FIXME: Why does it crash & burn without this check? Why is it deferred?
 
         var flower = flowerLookup.GetRefRW(targetFlower);
 
@@ -84,7 +87,7 @@ public partial struct BeeAtFlowerJob : IJobEntity
         {
             ecb.RemoveComponent<AtFlower>(chunkKey, entity);
             
-            bee.targetFlower = null;
+            bee.targetFlower = Entity.Null;
             
             if (bee.homeHive == null) return; // TODO: handle no hive case
             var hive =  (Entity) bee.homeHive;

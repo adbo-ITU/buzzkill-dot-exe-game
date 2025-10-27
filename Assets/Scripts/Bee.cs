@@ -23,7 +23,7 @@ class BeeBaker : Baker<Bee>
             destination = authoring.destination,
             nectarCapacity = authoring.nectarCapacity,
             nectarCarried = authoring.nectarCarried,
-            targetFlower = null,
+            targetFlower = Entity.Null,
             homeHive = null
         });
         AddComponent(entity, new TravellingToFlower()); //  TODO change this to at hive
@@ -34,7 +34,7 @@ public struct BeeData : IComponentData
 {
     public float speed;
     public float3 destination;
-    public Nullable<Entity> targetFlower;
+    public Entity targetFlower;
     public float nectarCapacity;
     public float nectarCarried;
     public Nullable<Entity> homeHive;

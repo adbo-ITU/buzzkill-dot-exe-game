@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 using Random = Unity.Mathematics.Random;
 
 [UpdateAfter(typeof(FlowerSpawnerSystem))] 
@@ -16,6 +17,7 @@ public partial struct BeeSpawnerSystem : ISystem
         state.RequireForUpdate<BeeSpawner>();
         state.RequireForUpdate<FlowerData>();
         state.RequireForUpdate<HiveData>();
+        state.RequireForUpdate<FlowerManager>();
     }
 
     [BurstCompile]
@@ -84,6 +86,7 @@ public partial struct BeeSpawnJob : IJobEntity
             
 
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
+            Debug.Log("Flower entity: " + flowerEntity);
             ecb.AddComponent(chunkKey, e, new BeeData
             {
                 speed = 15,

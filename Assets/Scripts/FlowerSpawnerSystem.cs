@@ -37,8 +37,7 @@ public partial struct FlowerSpawnerSystem : ISystem
         var handle = new FlowerSpawnJob
         {
             ecb = ecb,
-            flowerEntities = flowerManager.flowerEntities,
-            flowerDatas = flowerManager.flowerData,
+            flowerManager = flowerManager
         }.Schedule(state.Dependency);
 
         handle.Complete();
@@ -49,8 +48,7 @@ public partial struct FlowerSpawnerSystem : ISystem
 public partial struct FlowerSpawnJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecb;
-    public NativeArray<Entity> flowerEntities;
-    public NativeArray<FlowerData> flowerDatas;
+    public FlowerManager flowerManager;
 
     public void Execute([ChunkIndexInQuery] int chunkKey, ref FlowerSpawner spawner, Entity entity)
     {
@@ -83,8 +81,8 @@ public partial struct FlowerSpawnJob : IJobEntity
                     nectarAmount = capacity,
                     position = pos + new float3(0, flowerHeight, 0)
                 };
-                flowerEntities[i] = e;
-                flowerDatas[i] = flowerData;
+                flowerManager.flowerEntities[i] = e;
+                flowerManager.flowerData[i] = flowerData;
                 
                 ecb.AddComponent(chunkKey, e, flowerData);
                 var transform = LocalTransform.FromPosition(pos).WithScale(flowerHeight);
