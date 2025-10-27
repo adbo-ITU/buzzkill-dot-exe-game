@@ -1,4 +1,5 @@
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -11,6 +12,7 @@ partial struct BeeAtHiveSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
+        state.RequireForUpdate<FlowerManager>();
         _hiveLookup = state.GetComponentLookup<HiveData>(isReadOnly: false);
     }
 
@@ -23,11 +25,14 @@ partial struct BeeAtHiveSystem : ISystem
         
         _hiveLookup.Update(ref state);
         
+        var flowerManager = SystemAPI.GetSingleton<FlowerManager>();
+        
         var atHiveJob = new BeeAtHiveJob
         {
             deltaTime = SystemAPI.Time.DeltaTime,
             hiveLookup = _hiveLookup,
-            ecb = ecb
+            ecb = ecb,
+            flowerManager = flowerManager
         }.Schedule(state.Dependency);
 
         atHiveJob.Complete();
@@ -46,6 +51,7 @@ public partial struct BeeAtHiveJob : IJobEntity
     public float deltaTime;
     public ComponentLookup<HiveData> hiveLookup;
     public EntityCommandBuffer.ParallelWriter ecb;
+    [ReadOnly] public FlowerManager flowerManager;
 
     void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, in AtHive atHive, ref BeeData bee)
     {
@@ -65,8 +71,10 @@ public partial struct BeeAtHiveJob : IJobEntity
         if (!beeIsDepleted) return;
         
         ecb.RemoveComponent<AtHive>(chunkKey, entity);
-        // TODO: find flower entity to go to
+
+        var (flowerEntity, flowerData) = flowerManager.RandomFlower;
+        bee.destination = flowerData.position;
+        bee.targetFlower = flowerEntity;
         ecb.AddComponent(chunkKey, entity, new TravellingToFlower());
-        
     }
 }

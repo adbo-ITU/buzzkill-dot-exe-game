@@ -1,10 +1,11 @@
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using Random = Unity.Mathematics.Random;
 
-[UpdateInGroup(typeof(InitializationSystemGroup))] 
+[UpdateInGroup(typeof(InitializationSystemGroup))]
 public partial struct FlowerSpawnerSystem : ISystem
 {
     [BurstCompile]
@@ -24,7 +25,7 @@ public partial struct FlowerSpawnerSystem : ISystem
         
         var handle = new FlowerSpawnJob
         {
-            ecb = ecb
+            ecb = ecb,
         }.Schedule(state.Dependency);
         
         handle.Complete();
@@ -39,16 +40,22 @@ public partial struct FlowerSpawnJob : IJobEntity
     public void Execute([ChunkIndexInQuery] int chunkKey, ref FlowerSpawner spawner, Entity entity)
     {
         var rnd = new Random(42);
-
-        var prefabs = new []
-        {
-            spawner.flowerPrefabA,
-            spawner.flowerPrefabB,
-            spawner.flowerPrefabC,
-            spawner.flowerPrefabD,
-            spawner.flowerPrefabE,
-        };
         
+        var prefabs = new NativeArray<Entity>(5, Allocator.Temp)
+        {
+            [0] = spawner.flowerPrefabA,
+            [1] = spawner.flowerPrefabB,
+            [2] = spawner.flowerPrefabC,
+            [3] = spawner.flowerPrefabD,
+            [4] = spawner.flowerPrefabE,
+        };
+
+        var flowerManager = new FlowerManager
+        {
+            flowerMap = new NativeHashMap<Entity, FlowerData>(spawner.numFlower, Allocator.Persistent),
+            random = rnd,
+        };
+
         for (float i = 0; i < spawner.numFlower; i++)
         {
                 const float flowerHeight = 5f;
@@ -61,16 +68,22 @@ public partial struct FlowerSpawnJob : IJobEntity
                 var e = ecb.Instantiate(chunkKey, prefab);
 
                 var capacity = rnd.NextFloat(5f, 20f);
-                
-                ecb.AddComponent(chunkKey, e, new FlowerData
+                var flowerData = new FlowerData
                 {
                     nectarCapacity = capacity,
                     nectarAmount = capacity,
                     position = pos + new float3(0, flowerHeight, 0)
-                });
-
+                };
+                flowerManager.flowerMap[e] = flowerData;
+                
+                ecb.AddComponent(chunkKey, e, flowerData);
                 var transform = LocalTransform.FromPosition(pos).WithScale(flowerHeight);
                 ecb.SetComponent(chunkKey, e, transform);
         }
+
+        var flowerManagerEntity = ecb.CreateEntity(chunkKey);
+        ecb.AddComponent(chunkKey, flowerManagerEntity, flowerManager);
+        
+        prefabs.Dispose();
     }
 }
