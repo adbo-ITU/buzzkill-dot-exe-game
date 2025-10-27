@@ -10,4 +10,10 @@ public struct FlowerManager : IComponentData
 {
     public NativeArray<Entity> flowerEntities;
     public NativeArray<FlowerData> flowerData;
+
+    public (Entity, FlowerData) GetRandomFlower(Random rng)
+    {
+        var index = rng.NextInt(0, flowerEntities.Length);
+        return (flowerEntities[index], flowerData[index]);
+    }
 }

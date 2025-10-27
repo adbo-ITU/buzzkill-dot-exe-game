@@ -29,6 +29,7 @@ partial struct BeeAtHiveSystem : ISystem
         
         var atHiveJob = new BeeAtHiveJob
         {
+            time = SystemAPI.Time.ElapsedTime,
             deltaTime = SystemAPI.Time.DeltaTime,
             hiveLookup = _hiveLookup,
             ecb = ecb,
@@ -48,6 +49,7 @@ partial struct BeeAtHiveSystem : ISystem
 [BurstCompile]
 public partial struct BeeAtHiveJob : IJobEntity
 {
+    public double time;
     public float deltaTime;
     public ComponentLookup<HiveData> hiveLookup;
     public EntityCommandBuffer.ParallelWriter ecb;
@@ -71,7 +73,8 @@ public partial struct BeeAtHiveJob : IJobEntity
         
         ecb.RemoveComponent<AtHive>(chunkKey, entity);
 
-        var (flowerEntity, flowerData) = (flowerManager.flowerEntities[0], flowerManager.flowerData[0]);
+        var rng = new Random((uint)(time * 10_000));
+        var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(rng);
         bee.destination = flowerData.position;
         bee.targetFlower = flowerEntity;
         ecb.AddComponent(chunkKey, entity, new TravellingToFlower());

@@ -86,7 +86,6 @@ public partial struct BeeSpawnJob : IJobEntity
             
 
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
-            Debug.Log("Flower entity: " + flowerEntity);
             ecb.AddComponent(chunkKey, e, new BeeData
             {
                 speed = 15,
