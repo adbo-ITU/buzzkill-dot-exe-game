@@ -23,11 +23,24 @@ public partial struct FlowerSpawnerSystem : ISystem
             SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem .Singleton>()
                 .CreateCommandBuffer(state.WorldUnmanaged ).AsParallelWriter();
         
+        var spawner = SystemAPI.GetSingleton<FlowerSpawner>();
+        
+        var flowerManager = new FlowerManager
+        {
+            flowerEntities = new NativeArray<Entity>(spawner.numFlower, Allocator.Persistent),
+            flowerData = new NativeArray<FlowerData>(spawner.numFlower, Allocator.Persistent),
+        };
+        
+        var flowerManagerEntity = state.EntityManager.CreateEntity();
+        state.EntityManager.AddComponentData(flowerManagerEntity, flowerManager);
+        
         var handle = new FlowerSpawnJob
         {
             ecb = ecb,
+            flowerEntities = flowerManager.flowerEntities,
+            flowerDatas = flowerManager.flowerData,
         }.Schedule(state.Dependency);
-        
+
         handle.Complete();
     }
 }
@@ -36,6 +49,8 @@ public partial struct FlowerSpawnerSystem : ISystem
 public partial struct FlowerSpawnJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecb;
+    public NativeArray<Entity> flowerEntities;
+    public NativeArray<FlowerData> flowerDatas;
 
     public void Execute([ChunkIndexInQuery] int chunkKey, ref FlowerSpawner spawner, Entity entity)
     {
@@ -50,13 +65,7 @@ public partial struct FlowerSpawnJob : IJobEntity
             [4] = spawner.flowerPrefabE,
         };
 
-        var flowerManager = new FlowerManager
-        {
-            flowerMap = new NativeHashMap<Entity, FlowerData>(spawner.numFlower, Allocator.Persistent),
-            random = rnd,
-        };
-
-        for (float i = 0; i < spawner.numFlower; i++)
+        for (int i = 0; i < spawner.numFlower; i++)
         {
                 const float flowerHeight = 5f;
             
@@ -74,16 +83,14 @@ public partial struct FlowerSpawnJob : IJobEntity
                     nectarAmount = capacity,
                     position = pos + new float3(0, flowerHeight, 0)
                 };
-                flowerManager.flowerMap[e] = flowerData;
+                flowerEntities[i] = e;
+                flowerDatas[i] = flowerData;
                 
                 ecb.AddComponent(chunkKey, e, flowerData);
                 var transform = LocalTransform.FromPosition(pos).WithScale(flowerHeight);
                 ecb.SetComponent(chunkKey, e, transform);
         }
 
-        var flowerManagerEntity = ecb.CreateEntity(chunkKey);
-        ecb.AddComponent(chunkKey, flowerManagerEntity, flowerManager);
-        
         prefabs.Dispose();
     }
 }
