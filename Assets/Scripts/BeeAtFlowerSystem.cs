@@ -1,5 +1,6 @@
 using System;
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -16,7 +17,7 @@ partial struct BeeAtFlowerSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         _flowerLookup = state.GetComponentLookup<FlowerData>(isReadOnly: false);
-        _hiveLookup = state.GetComponentLookup<HiveData>(isReadOnly: false);
+        _hiveLookup = state.GetComponentLookup<HiveData>(isReadOnly: true);
     }
 
     [BurstCompile]
@@ -52,8 +53,7 @@ public partial struct BeeAtFlowerJob : IJobEntity
 {
     public float deltaTime;
     public ComponentLookup<FlowerData> flowerLookup;
-    // marked as read-only hive lookup 
-    public ComponentLookup<HiveData> hiveLookup;
+    [ReadOnly] public ComponentLookup<HiveData> hiveLookup;
     
     public EntityCommandBuffer.ParallelWriter ecb;
 
