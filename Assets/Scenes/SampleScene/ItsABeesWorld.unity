@@ -199,7 +199,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   beePrefab: {fileID: 4615560902193265911, guid: a1c51983d2f3643f49870c8dadadc872, type: 3}
-  numBees: 10
+  numBees: 20
   numHives: 3
 --- !u!4 &2039319760
 Transform:
