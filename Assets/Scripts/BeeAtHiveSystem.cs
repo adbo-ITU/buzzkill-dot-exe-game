@@ -73,7 +73,7 @@ public partial struct BeeAtHiveJob : IJobEntity
         
         ecb.RemoveComponent<AtHive>(chunkKey, entity);
 
-        var rng = new Random((uint)(time * 10_000));
+        var rng = new Random((uint)(time * 10_000) + (uint)entity.Index);
         var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(rng);
         bee.destination = flowerData.position;
         bee.targetFlower = flowerEntity;

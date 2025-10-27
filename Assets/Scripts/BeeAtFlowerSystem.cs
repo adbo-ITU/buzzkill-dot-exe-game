@@ -100,14 +100,13 @@ public partial struct BeeAtFlowerJob : IJobEntity
             var hive =  (Entity) bee.homeHive;
             bee.destination = hiveLookup.GetRefRO(hive).ValueRO.position;
 
-            // TODO: find a new flower to visit before going home in case the bee is not saturated
             if (beeIsSaturated)
             {
                 ecb.AddComponent<TravellingToHome>(chunkKey, entity);
             }
             else
             {
-                var rng = new Random((uint)(time * 10_000));
+                var rng = new Random((uint)(time * 10_000) + (uint)entity.Index);
                 var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(rng);
                 bee.destination = flowerData.position;
                 bee.targetFlower = flowerEntity;
