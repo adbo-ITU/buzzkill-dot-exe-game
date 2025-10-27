@@ -3,6 +3,8 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
+using Random = Unity.Mathematics.Random;
 
 [UpdateAfter(typeof(BeeFlyingSystem))] 
 partial struct BeeAtHiveSystem : ISystem
@@ -67,13 +69,13 @@ public partial struct BeeAtHiveJob : IJobEntity
         bee.nectarCarried -= nectarGiven;
         hiveData.nectarAmount += nectarGiven;
         hiveLookup[hive] = hiveData;
-        
+
         var beeIsDepleted = bee.nectarCarried <= 0.01;
         if (!beeIsDepleted) return;
         
         ecb.RemoveComponent<AtHive>(chunkKey, entity);
 
-        var rng = new Random((uint)(time * 10_000) + (uint)entity.Index);
+        var rng = BeeData.GetRng(time, entity);
         var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(rng);
         bee.destination = flowerData.position;
         bee.targetFlower = flowerEntity;

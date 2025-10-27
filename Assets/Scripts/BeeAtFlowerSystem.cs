@@ -73,7 +73,6 @@ public partial struct BeeAtFlowerJob : IJobEntity
         
         var targetFlower = bee.targetFlower;
         if (targetFlower == Entity.Null) return;
-        if (targetFlower.Index < 0) return; // TODO / FIXME: Why does it crash & burn without this check? Why is it deferred?
 
         var flower = flowerLookup.GetRefRW(targetFlower);
 
@@ -106,7 +105,7 @@ public partial struct BeeAtFlowerJob : IJobEntity
             }
             else
             {
-                var rng = new Random((uint)(time * 10_000) + (uint)entity.Index);
+                var rng = BeeData.GetRng(time, entity);
                 var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(rng);
                 bee.destination = flowerData.position;
                 bee.targetFlower = flowerEntity;

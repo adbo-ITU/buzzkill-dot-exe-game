@@ -96,7 +96,6 @@ public partial struct BeeToHiveJob : IJobEntity
         {
             ecb.RemoveComponent<TravellingToHome>(chunkKey, entity);
             ecb.AddComponent(chunkKey, entity, new AtHive());
-            Debug.Log("Bee reached hive");
         }
     }
 }
