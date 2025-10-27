@@ -55,6 +55,7 @@ public partial struct BeeSpawnerSystem : ISystem
         handle.Complete();
 
         flowers.Dispose();
+        hives.Dispose();
     }
 }
 
