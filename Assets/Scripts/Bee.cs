@@ -8,7 +8,6 @@ class Bee : MonoBehaviour
 {
     public float3 position;
     public float speed;
-    public float3 destination;
     public float nectarCapacity;
     public float nectarCarried;
 }
@@ -21,7 +20,6 @@ class BeeBaker : Baker<Bee>
         AddComponent(entity, new BeeData
         {
             speed = authoring.speed,
-            destination = authoring.destination,
             nectarCapacity = authoring.nectarCapacity,
             nectarCarried = authoring.nectarCarried,
             targetFlower = Entity.Null,
@@ -34,7 +32,6 @@ class BeeBaker : Baker<Bee>
 public struct BeeData : IComponentData
 {
     public float speed;
-    public float3 destination;
     public Entity targetFlower;
     public float nectarCapacity;
     public float nectarCarried;

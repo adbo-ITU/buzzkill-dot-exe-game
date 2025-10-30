@@ -98,7 +98,6 @@ public partial struct BeeAtFlowerJob : IJobEntity
         {
             var hive = hiveLookup.GetRefRO(bee.homeHive);
             bee.targetFlower = Entity.Null;
-            bee.destination = hive.ValueRO.position;
             to = hive.ValueRO.position;
             ecb.AddComponent<TravellingToHome>(chunkKey, entity);
         }
@@ -106,7 +105,6 @@ public partial struct BeeAtFlowerJob : IJobEntity
         {
             var rng = BeeData.GetRng(time, entity);
             var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(rng);
-            bee.destination = flowerData.position;
             bee.targetFlower = flowerEntity;
             to = flowerData.position;
             ecb.AddComponent<TravellingToFlower>(chunkKey, entity);

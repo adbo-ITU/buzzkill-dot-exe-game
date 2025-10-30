@@ -49,7 +49,7 @@ partial struct BeeFlyingSystem : ISystem
     [BurstCompile]
     public static bool TravelBee(ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, float deltaTime)
     {
-        var between = bee.destination - flightPath.position;
+        var between = flightPath.to - flightPath.position;
         var distance = math.length(between);
 
         if (distance <= 1)
@@ -59,14 +59,11 @@ partial struct BeeFlyingSystem : ISystem
         
         flightPath.time += deltaTime;
 
-        float3 from = flightPath.from;
-        float3 to = flightPath.to;
-        var direction = math.normalize(to - from);
-
+        var direction = math.normalize(between);
         flightPath.position += direction * bee.speed * deltaTime;
         
         var totalDist = math.length(flightPath.to - flightPath.from);
-        var travelled = math.length(flightPath.position - from);
+        var travelled = math.length(flightPath.position - flightPath.from);
         var progress = travelled / totalDist;
 
         var height = math.sin(progress * math.PI) * totalDist / 10f;
