@@ -6,7 +6,6 @@ class Hive : MonoBehaviour
 {
     public float3 position;
     public float nectarAmount;
-    public int id;
 }
 
 class HiveBaker : Baker<Hive>
@@ -18,7 +17,6 @@ class HiveBaker : Baker<Hive>
         {
             nectarAmount = authoring.nectarAmount,
             position = authoring.position,
-            id = authoring.id
         });
     }
 }
@@ -27,5 +25,4 @@ public struct HiveData : IComponentData
 {
     public float nectarAmount;
     public float3 position;
-    public int id;
 }
