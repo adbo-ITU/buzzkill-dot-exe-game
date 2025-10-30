@@ -25,7 +25,7 @@ class BeeBaker : Baker<Bee>
             nectarCapacity = authoring.nectarCapacity,
             nectarCarried = authoring.nectarCarried,
             targetFlower = Entity.Null,
-            homeHive = null
+            homeHive = Entity.Null
         });
         AddComponent(entity, new TravellingToFlower()); //  TODO change this to at hive
     }
@@ -38,7 +38,7 @@ public struct BeeData : IComponentData
     public Entity targetFlower;
     public float nectarCapacity;
     public float nectarCarried;
-    public Nullable<Entity> homeHive;
+    public Entity homeHive;
 
     public static Random GetRng(double time, Entity entity)
     {

@@ -59,8 +59,7 @@ public partial struct BeeAtHiveJob : IJobEntity
 
     void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, in AtHive atHive, ref BeeData bee)
     {
-        if (bee.homeHive == null) return; // TODO: handle no hive case
-        var hive = (Entity) bee.homeHive;
+        var hive = bee.homeHive;
         if (!hiveLookup.HasComponent(hive)) return;
         var hiveData = hiveLookup[hive];
         

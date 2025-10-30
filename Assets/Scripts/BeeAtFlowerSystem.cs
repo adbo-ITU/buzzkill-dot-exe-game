@@ -89,28 +89,23 @@ public partial struct BeeAtFlowerJob : IJobEntity
         var flowerIsEmpty = flower.ValueRW.nectarAmount <= 0.01;
         var beeIsSaturated = bee.nectarCapacity - bee.nectarCarried <= 0.01;
 
-        if (flowerIsEmpty || beeIsSaturated)
-        {
-            ecb.RemoveComponent<AtFlower>(chunkKey, entity);
-            
-            bee.targetFlower = Entity.Null;
-            
-            if (bee.homeHive == null) return; // TODO: handle no hive case
-            var hive =  (Entity) bee.homeHive;
-            bee.destination = hiveLookup.GetRefRO(hive).ValueRO.position;
+        if (!flowerIsEmpty && !beeIsSaturated) return;
 
-            if (beeIsSaturated)
-            {
-                ecb.AddComponent<TravellingToHome>(chunkKey, entity);
-            }
-            else
-            {
-                var rng = BeeData.GetRng(time, entity);
-                var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(rng);
-                bee.destination = flowerData.position;
-                bee.targetFlower = flowerEntity;
-                ecb.AddComponent(chunkKey, entity, new TravellingToFlower());
-            }
+        ecb.RemoveComponent<AtFlower>(chunkKey, entity);
+
+        if (beeIsSaturated)
+        {
+            bee.targetFlower = Entity.Null;
+            bee.destination = hiveLookup.GetRefRO(bee.homeHive).ValueRO.position;
+            ecb.AddComponent<TravellingToHome>(chunkKey, entity);
+        }
+        else
+        {
+            var rng = BeeData.GetRng(time, entity);
+            var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(rng);
+            bee.destination = flowerData.position;
+            bee.targetFlower = flowerEntity;
+            ecb.AddComponent<TravellingToFlower>(chunkKey, entity);
         }
     }
 }
