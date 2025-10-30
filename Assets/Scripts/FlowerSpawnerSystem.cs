@@ -1,10 +1,11 @@
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using Random = Unity.Mathematics.Random;
 
-[UpdateInGroup(typeof(InitializationSystemGroup))] 
+[UpdateInGroup(typeof(InitializationSystemGroup))]
 public partial struct FlowerSpawnerSystem : ISystem
 {
     [BurstCompile]
@@ -18,59 +19,55 @@ public partial struct FlowerSpawnerSystem : ISystem
     {
         state.Enabled = false;
         
-        EntityCommandBuffer.ParallelWriter ecb =
-            SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem .Singleton>()
-                .CreateCommandBuffer(state.WorldUnmanaged ).AsParallelWriter();
-        
-        var handle = new FlowerSpawnJob
-        {
-            ecb = ecb
-        }.Schedule(state.Dependency);
-        
-        handle.Complete();
-    }
-}
-
-[BurstCompile]
-public partial struct FlowerSpawnJob : IJobEntity
-{
-    public EntityCommandBuffer.ParallelWriter ecb;
-
-    public void Execute([ChunkIndexInQuery] int chunkKey, ref FlowerSpawner spawner, Entity entity)
-    {
+        var em = state.EntityManager;
+        var spawner = SystemAPI.GetSingleton<FlowerSpawner>();
         var rnd = new Random(42);
-
-        var prefabs = new []
+        
+        var flowerManager = new FlowerManager
         {
-            spawner.flowerPrefabA,
-            spawner.flowerPrefabB,
-            spawner.flowerPrefabC,
-            spawner.flowerPrefabD,
-            spawner.flowerPrefabE,
+            flowerEntities = new NativeArray<Entity>(spawner.numFlower, Allocator.Persistent),
+            flowerData = new NativeArray<FlowerData>(spawner.numFlower, Allocator.Persistent),
         };
         
-        for (float i = 0; i < spawner.numFlower; i++)
+        var flowerManagerEntity = em.CreateEntity();
+        em.AddComponentData(flowerManagerEntity, flowerManager);
+        
+        var prefabs = new NativeArray<Entity>(5, Allocator.Temp)
         {
-                const float flowerHeight = 5f;
+            [0] = spawner.flowerPrefabA,
+            [1] = spawner.flowerPrefabB,
+            [2] = spawner.flowerPrefabC,
+            [3] = spawner.flowerPrefabD,
+            [4] = spawner.flowerPrefabE,
+        };
+
+        for (int i = 0; i < spawner.numFlower; i++)
+        {
+            const float flowerHeight = 5f;
             
-                float x = rnd.NextFloat(0f, 50f);
-                float z = rnd.NextFloat(0f, 50f);
-                float3 pos = new float3(x, 0, z); 
+            float x = rnd.NextFloat(0f, 50f);
+            float z = rnd.NextFloat(0f, 50f);
+            float3 pos = new float3(x, 0, z); 
 
-                var prefab = prefabs[rnd.NextInt(prefabs.Length)];
-                var e = ecb.Instantiate(chunkKey, prefab);
+            var prefab = prefabs[rnd.NextInt(prefabs.Length)];
+            var e = em.Instantiate(prefab);
 
-                var capacity = rnd.NextFloat(5f, 20f);
+            var capacity = rnd.NextFloat(5f, 20f);
+            var flowerData = new FlowerData
+            {
+                nectarCapacity = capacity,
+                nectarAmount = capacity,
+                position = pos + new float3(0, flowerHeight, 0)
+            };
+
+            flowerManager.flowerEntities[i] = e;
+            flowerManager.flowerData[i] = flowerData;
                 
-                ecb.AddComponent(chunkKey, e, new FlowerData
-                {
-                    nectarCapacity = capacity,
-                    nectarAmount = capacity,
-                    position = pos + new float3(0, flowerHeight, 0)
-                });
-
-                var transform = LocalTransform.FromPosition(pos).WithScale(flowerHeight);
-                ecb.SetComponent(chunkKey, e, transform);
+            em.AddComponentData(e, flowerData);
+            var transform = LocalTransform.FromPosition(pos).WithScale(flowerHeight);
+            em.SetComponentData(e, transform);
         }
+
+        prefabs.Dispose();
     }
 }

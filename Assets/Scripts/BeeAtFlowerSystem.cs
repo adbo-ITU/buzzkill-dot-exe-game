@@ -6,8 +6,10 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using Random = Unity.Mathematics.Random;
 
 [UpdateAfter(typeof(BeeFlyingSystem))] 
+[UpdateAfter(typeof(BeeAtHiveSystem))]
 partial struct BeeAtFlowerSystem : ISystem
 {
     private ComponentLookup<FlowerData> _flowerLookup;
@@ -16,6 +18,7 @@ partial struct BeeAtFlowerSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
+        state.RequireForUpdate<FlowerManager>();
         _flowerLookup = state.GetComponentLookup<FlowerData>(isReadOnly: false);
         _hiveLookup = state.GetComponentLookup<HiveData>(isReadOnly: true);
     }
@@ -30,12 +33,16 @@ partial struct BeeAtFlowerSystem : ISystem
         _flowerLookup.Update(ref state);
         _hiveLookup.Update(ref state);
         
+        var flowerManager = SystemAPI.GetSingleton<FlowerManager>();
+        
         var atFlowerJob = new BeeAtFlowerJob
         {
+            time = SystemAPI.Time.ElapsedTime,
             deltaTime = SystemAPI.Time.DeltaTime,
             flowerLookup = _flowerLookup,
             hiveLookup = _hiveLookup,
-            ecb = ecb
+            ecb = ecb,
+            flowerManager = flowerManager
         }.Schedule(state.Dependency);
 
         atFlowerJob.Complete();
@@ -51,9 +58,11 @@ partial struct BeeAtFlowerSystem : ISystem
 [BurstCompile]
 public partial struct BeeAtFlowerJob : IJobEntity
 {
+    public double time;
     public float deltaTime;
     public ComponentLookup<FlowerData> flowerLookup;
     [ReadOnly] public ComponentLookup<HiveData> hiveLookup;
+    [ReadOnly] public FlowerManager flowerManager;
     
     public EntityCommandBuffer.ParallelWriter ecb;
 
@@ -61,9 +70,9 @@ public partial struct BeeAtFlowerJob : IJobEntity
     {
         var rot = math.mul(quaternion.RotateZ(2f * deltaTime), quaternion.RotateY(2f * deltaTime));
         trans.Rotation = math.mul(trans.Rotation, rot);
-
-        if (bee.targetFlower == null) return;
-        var targetFlower = (Entity) bee.targetFlower;
+        
+        var targetFlower = bee.targetFlower;
+        if (targetFlower == Entity.Null) return;
 
         var flower = flowerLookup.GetRefRW(targetFlower);
 
@@ -80,18 +89,23 @@ public partial struct BeeAtFlowerJob : IJobEntity
         var flowerIsEmpty = flower.ValueRW.nectarAmount <= 0.01;
         var beeIsSaturated = bee.nectarCapacity - bee.nectarCarried <= 0.01;
 
-        if (flowerIsEmpty || beeIsSaturated)
-        {
-            ecb.RemoveComponent<AtFlower>(chunkKey, entity);
-            
-            bee.targetFlower = null;
-            
-            if (bee.homeHive == null) return; // TODO: handle no hive case
-            var hive =  (Entity) bee.homeHive;
-            bee.destination = hiveLookup.GetRefRO(hive).ValueRO.position;
+        if (!flowerIsEmpty && !beeIsSaturated) return;
 
-            // TODO: find a new flower to visit before going home in case the bee is not saturated
+        ecb.RemoveComponent<AtFlower>(chunkKey, entity);
+
+        if (beeIsSaturated)
+        {
+            bee.targetFlower = Entity.Null;
+            bee.destination = hiveLookup.GetRefRO(bee.homeHive).ValueRO.position;
             ecb.AddComponent<TravellingToHome>(chunkKey, entity);
+        }
+        else
+        {
+            var rng = BeeData.GetRng(time, entity);
+            var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(rng);
+            bee.destination = flowerData.position;
+            bee.targetFlower = flowerEntity;
+            ecb.AddComponent<TravellingToFlower>(chunkKey, entity);
         }
     }
 }

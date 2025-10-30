@@ -2,6 +2,7 @@ using System;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
+using Random = Unity.Mathematics.Random;
 
 class Bee : MonoBehaviour
 {
@@ -23,8 +24,8 @@ class BeeBaker : Baker<Bee>
             destination = authoring.destination,
             nectarCapacity = authoring.nectarCapacity,
             nectarCarried = authoring.nectarCarried,
-            targetFlower = null,
-            homeHive = null
+            targetFlower = Entity.Null,
+            homeHive = Entity.Null
         });
         AddComponent(entity, new TravellingToFlower()); //  TODO change this to at hive
     }
@@ -34,10 +35,15 @@ public struct BeeData : IComponentData
 {
     public float speed;
     public float3 destination;
-    public Nullable<Entity> targetFlower;
+    public Entity targetFlower;
     public float nectarCapacity;
     public float nectarCarried;
-    public Nullable<Entity> homeHive;
+    public Entity homeHive;
+
+    public static Random GetRng(double time, Entity entity)
+    {
+        return new Random((uint)((long)((entity.Index * time) * 275869127) ^ 6953540479));
+    }
 }
 
 public struct TravellingToFlower : IComponentData {}
