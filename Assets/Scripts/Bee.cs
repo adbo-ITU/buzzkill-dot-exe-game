@@ -50,3 +50,11 @@ public struct TravellingToFlower : IComponentData {}
 public struct TravellingToHome : IComponentData {}
 public struct AtFlower : IComponentData {}
 public struct AtHive : IComponentData {}
+
+public struct FlightPath : IComponentData
+{
+    public float time;
+    public float3 from;
+    public float3 position;
+    public float3 to;
+}

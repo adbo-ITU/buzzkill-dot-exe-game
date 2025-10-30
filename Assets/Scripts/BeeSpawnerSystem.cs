@@ -62,7 +62,7 @@ public partial struct BeeSpawnJob : IJobEntity
         {
             // modulus to find hive to be home
             var hiveIndex = i % numHives; 
-            var (hive, hiveEntity) = hives[hiveIndex]; 
+            var (hive, hiveEntity) = hives[hiveIndex];
             
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
             ecb.AddComponent(chunkKey, e, new BeeData
