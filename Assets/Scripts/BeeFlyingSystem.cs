@@ -1,10 +1,11 @@
 using System;
+using System.Numerics;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
+using Vector3 = UnityEngine.Vector3;
 
 
 partial struct BeeFlyingSystem : ISystem
@@ -46,19 +47,34 @@ partial struct BeeFlyingSystem : ISystem
     }
     
     [BurstCompile]
-    public static bool TravelBee(ref LocalTransform trans, ref BeeData bee, float deltaTime)
+    public static bool TravelBee(ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, float deltaTime)
     {
-        var between = bee.destination - trans.Position;
+        var between = flightPath.to - flightPath.position;
         var distance = math.length(between);
 
         if (distance <= 1)
         {
             return false;
         }
+        
+        flightPath.time += deltaTime;
 
         var direction = math.normalize(between);
+        flightPath.position += direction * bee.speed * deltaTime;
+        
+        var totalDist = math.length(flightPath.to - flightPath.from);
+        var travelled = math.length(flightPath.position - flightPath.from);
+        var progress = travelled / totalDist;
 
-        trans.Position += direction * bee.speed * deltaTime;
+        var height = math.sin(progress * math.PI) * totalDist / 10f;
+        var arc = math.up() * height;
+
+        var orthogonal = math.normalize(math.cross(direction, math.up()));
+        var verticalWiggle = math.sin(flightPath.time * 10f) * math.up() / 3f;
+        var horizontalWiggle = orthogonal * math.cos(flightPath.time * 20f) / 2f;
+        var wiggle = verticalWiggle + horizontalWiggle;
+        
+        trans.Position = flightPath.position + arc + wiggle;
 
         return true;
     }
@@ -70,9 +86,9 @@ public partial struct BeeToFlowerJob : IJobEntity
     public EntityCommandBuffer.ParallelWriter ecb;
     public float deltaTime;
 
-    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee, in TravellingToFlower travellingToFlower)
+    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, in TravellingToFlower travellingToFlower)
     {
-        var moved = BeeFlyingSystem.TravelBee(ref trans, ref bee, deltaTime);
+        var moved = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime);
 
         if (!moved)
         {
@@ -88,9 +104,9 @@ public partial struct BeeToHiveJob : IJobEntity
     public EntityCommandBuffer.ParallelWriter ecb;
     public float deltaTime;
 
-    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee, in TravellingToHome travellingToHome)
+    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, in TravellingToHome travellingToHome)
     {
-        var moved = BeeFlyingSystem.TravelBee(ref trans, ref bee, deltaTime);
+        var moved = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime);
 
         if (!moved)
         {

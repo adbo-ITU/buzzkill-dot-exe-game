@@ -93,19 +93,29 @@ public partial struct BeeAtFlowerJob : IJobEntity
 
         ecb.RemoveComponent<AtFlower>(chunkKey, entity);
 
+        float3 to;
         if (beeIsSaturated)
         {
+            var hive = hiveLookup.GetRefRO(bee.homeHive);
             bee.targetFlower = Entity.Null;
-            bee.destination = hiveLookup.GetRefRO(bee.homeHive).ValueRO.position;
+            to = hive.ValueRO.position;
             ecb.AddComponent<TravellingToHome>(chunkKey, entity);
         }
         else
         {
             var rng = BeeData.GetRng(time, entity);
             var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(rng);
-            bee.destination = flowerData.position;
             bee.targetFlower = flowerEntity;
+            to = flowerData.position;
             ecb.AddComponent<TravellingToFlower>(chunkKey, entity);
         }
+
+        ecb.AddComponent(chunkKey, entity, new FlightPath()
+        {
+            time = 0,
+            from = trans.Position,
+            to = to,
+            position = trans.Position
+        });
     }
 }
