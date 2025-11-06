@@ -52,7 +52,8 @@ public partial struct BeeSpawnJob : IJobEntity
         var rng = BeeData.GetRng(time, entity);
         for (int i = 0; i < spawner.numBees; i++)
         {
-            var (hiveEntity, hiveData) = hiveManager.GetRandomHive(rng);
+            int hiveIndex = rng.NextInt(0, hiveManager.hiveEntities.Length);
+            var (hiveEntity, hiveData) = hiveManager.GetRandomHive(hiveIndex);
             
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
             ecb.AddComponent(chunkKey, e, new BeeData
