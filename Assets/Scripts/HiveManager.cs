@@ -12,7 +12,7 @@ public struct HiveManager : IComponentData
     public NativeArray<HiveData> hiveData;
     
     [BurstCompile]
-    public (Entity, HiveData) GetRandomHive(int hiveIndex)
+    public (Entity, HiveData) GetHive(int hiveIndex)
     {
         return (hiveEntities[hiveIndex], hiveData[hiveIndex]);
     }
