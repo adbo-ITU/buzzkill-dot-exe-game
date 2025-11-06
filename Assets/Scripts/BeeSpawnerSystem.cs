@@ -4,7 +4,6 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using Random = Unity.Mathematics.Random;
 
 [UpdateAfter(typeof(FlowerSpawnerSystem))] 
 [UpdateAfter(typeof(HiveSpawnerSystem))]
@@ -15,22 +14,16 @@ public partial struct BeeSpawnerSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<BeeSpawner>();
-        state.RequireForUpdate<FlowerData>();
         state.RequireForUpdate<HiveData>();
-        state.RequireForUpdate<FlowerManager>();
+        state.RequireForUpdate<HiveManager>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         state.Enabled = false;
-
-        var j = 0;
-        var hives = new NativeArray<(HiveData, Entity)>(3, Allocator.TempJob); // todo: get correct number of hives from where?
-        foreach ((RefRO<HiveData> hive, Entity entity) in SystemAPI.Query<RefRO<HiveData>>().WithEntityAccess()) 
-        {
-            hives[j++] = (hive.ValueRO, entity);
-        }
+        
+        var hiveManager = SystemAPI.GetSingleton<HiveManager>();
         
         EntityCommandBuffer.ParallelWriter ecb =
             SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
@@ -38,31 +31,29 @@ public partial struct BeeSpawnerSystem : ISystem
 
         var handle = new BeeSpawnJob
         {
+            time = SystemAPI.Time.ElapsedTime,
             ecb = ecb,
-            hives = hives,
-            numHives = hives.Length,
+            hiveManager = hiveManager,
         }.Schedule(state.Dependency);
 
         handle.Complete();
-
-        hives.Dispose();
     }
 }
 
 [BurstCompile]
 public partial struct BeeSpawnJob : IJobEntity
 {
+    public double time;
     public EntityCommandBuffer.ParallelWriter ecb;
-    public NativeArray<(HiveData, Entity)> hives;
-    public int numHives;
+    [ReadOnly] public HiveManager  hiveManager;
 
     public void Execute([ChunkIndexInQuery] int chunkKey, ref BeeSpawner spawner, Entity entity)
     {
+        var rng = BeeData.GetRng(time, entity);
         for (int i = 0; i < spawner.numBees; i++)
         {
-            // modulus to find hive to be home
-            var hiveIndex = i % numHives; 
-            var (hive, hiveEntity) = hives[hiveIndex];
+            int hiveIndex = rng.NextInt(0, hiveManager.hiveEntities.Length);
+            var (hiveEntity, hiveData) = hiveManager.GetHive(hiveIndex);
             
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
             ecb.AddComponent(chunkKey, e, new BeeData
@@ -74,7 +65,7 @@ public partial struct BeeSpawnJob : IJobEntity
                 targetFlower = Entity.Null,
             });
             ecb.AddComponent(chunkKey, e, new AtHive());
-            ecb.SetComponent(chunkKey, e, LocalTransform.FromPosition(hive.position));
+            ecb.SetComponent(chunkKey, e, LocalTransform.FromPosition(hiveData.position));
         }
     }
 }
