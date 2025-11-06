@@ -21,7 +21,7 @@ public partial struct FlowerSpawnerSystem : ISystem
         
         var em = state.EntityManager;
         var spawner = SystemAPI.GetSingleton<FlowerSpawner>();
-        var rnd = new Random(42);
+        var rnd = new Random(42);  //TODO: should seed always be 42??
         
         var flowerManager = new FlowerManager
         {

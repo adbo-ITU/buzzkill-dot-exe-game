@@ -27,7 +27,7 @@ class BeeBaker : Baker<Bee>
             targetFlower = Entity.Null,
             homeHive = Entity.Null
         });
-        AddComponent(entity, new TravellingToFlower()); //  TODO change this to at hive
+        AddComponent(entity, new TravellingToFlower());
     }
 }
 
