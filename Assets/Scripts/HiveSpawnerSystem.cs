@@ -59,4 +59,17 @@ public partial struct HiveSpawnerSystem : ISystem
             em.SetComponentData(e, transform);
         }
     }
+    
+    [BurstCompile]
+    public void OnDestroy(ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingleton<HiveManager>(out var hiveManager))
+        {
+            if (hiveManager.hiveEntities.IsCreated)
+                hiveManager.hiveEntities.Dispose();
+            if (hiveManager.hiveData.IsCreated)
+                hiveManager.hiveData.Dispose();
+        }
+    }
+
 }

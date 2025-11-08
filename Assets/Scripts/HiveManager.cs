@@ -12,8 +12,9 @@ public struct HiveManager : IComponentData
     public NativeArray<HiveData> hiveData;
     
     [BurstCompile]
-    public (Entity, HiveData) GetHive(int hiveIndex)
+    public (Entity, HiveData) GetRandomHive(ref Random rng)
     {
+        var hiveIndex = rng.NextInt(0, hiveEntities.Length);
         return (hiveEntities[hiveIndex], hiveData[hiveIndex]);
     }
 }

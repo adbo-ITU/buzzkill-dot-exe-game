@@ -12,7 +12,7 @@ public struct FlowerManager : IComponentData
     public NativeArray<FlowerData> flowerData;
 
     [BurstCompile]
-    public (Entity, FlowerData) GetRandomFlower(Random rng)
+    public (Entity, FlowerData) GetRandomFlower(ref Random rng)
     {
         var index = rng.NextInt(0, flowerEntities.Length);
         return (flowerEntities[index], flowerData[index]);

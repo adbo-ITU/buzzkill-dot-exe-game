@@ -104,7 +104,7 @@ public partial struct BeeAtFlowerJob : IJobEntity
         else
         {
             var rng = BeeData.GetRng(time, entity);
-            var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(rng);
+            var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(ref rng);
             bee.targetFlower = flowerEntity;
             to = flowerData.position;
             ecb.AddComponent<TravellingToFlower>(chunkKey, entity);
