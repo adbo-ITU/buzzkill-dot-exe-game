@@ -70,4 +70,18 @@ public partial struct FlowerSpawnerSystem : ISystem
 
         prefabs.Dispose();
     }
+    
+    [BurstCompile]
+    public void OnDestroy(ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingleton<FlowerManager>(out var flowerManager))
+        {
+            if (flowerManager.flowerEntities.IsCreated)
+                flowerManager.flowerEntities.Dispose();
+            if (flowerManager.flowerData.IsCreated)
+                flowerManager.flowerData.Dispose();
+            
+        }
+    }
+
 }
