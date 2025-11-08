@@ -94,6 +94,7 @@ public partial struct BeeToFlowerJob : IJobEntity
         {
             ecb.RemoveComponent<TravellingToFlower>(chunkKey, entity);
             ecb.AddComponent(chunkKey, entity, new AtFlower());
+            ecb.RemoveComponent<FlowerRegenerationTag>(chunkKey, bee.targetFlower);
         }
     }
 }
