@@ -29,7 +29,7 @@ partial struct ConfigLoaderSystem : ISystem
         
         Debug.Log($"Config file loaded at: {path}: {jsonText}");
         
-        state.EntityManager.CreateSingleton(new SimulationConfig { Config = config });
+        state.EntityManager.CreateSingleton(new SimulationConfig { config = config });
     }
 
     [BurstCompile]
@@ -41,7 +41,7 @@ partial struct ConfigLoaderSystem : ISystem
 
 public struct SimulationConfig : IComponentData
 {
-    public SimulationConfigValues Config;
+    public SimulationConfigValues config;
 }
 
 [System.Serializable]
@@ -50,4 +50,5 @@ public struct SimulationConfigValues
     public int numBees;
     public int numHives;
     public int numFlowers;
+    public int worldSize;
 }

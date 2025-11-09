@@ -21,7 +21,7 @@ public partial struct HiveSpawnerSystem : ISystem
         state.Enabled = false;
         
         var em = state.EntityManager;
-        var config = SystemAPI.GetSingleton<SimulationConfig>().Config;
+        var config = SystemAPI.GetSingleton<SimulationConfig>().config;
         var spawner = SystemAPI.GetSingleton<HiveSpawner>();
         var rnd = new Random(42); //TODO: should seed always be 42??
         
@@ -40,8 +40,8 @@ public partial struct HiveSpawnerSystem : ISystem
         {
             const float hiveHeight = 5f;
             
-            float x = rnd.NextFloat(0f, 50f); // TODO: adjust to world size
-            float z = rnd.NextFloat(0f, 50f);
+            float x = rnd.NextFloat(0f, config.worldSize);
+            float z = rnd.NextFloat(0f, config.worldSize);
             float3 pos = new float3(x, 0, z); 
 
             var e =  em.Instantiate(prefab);

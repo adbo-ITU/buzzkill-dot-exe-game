@@ -21,7 +21,7 @@ public partial struct FlowerSpawnerSystem : ISystem
         state.Enabled = false;
         
         var em = state.EntityManager;
-        var config = SystemAPI.GetSingleton<SimulationConfig>().Config;
+        var config = SystemAPI.GetSingleton<SimulationConfig>().config;
         var flowerPrefabs = SystemAPI.GetSingleton<FlowerPrefabs>();
         var rnd = new Random(42);  //TODO: should seed always be 42??
         
@@ -47,8 +47,8 @@ public partial struct FlowerSpawnerSystem : ISystem
         {
             const float flowerHeight = 5f;
             
-            float x = rnd.NextFloat(0f, 50f);
-            float z = rnd.NextFloat(0f, 50f);
+            float x = rnd.NextFloat(0f, config.worldSize);
+            float z = rnd.NextFloat(0f, config.worldSize);
             float3 pos = new float3(x, 0, z); 
 
             var prefab = prefabs[rnd.NextInt(prefabs.Length)];

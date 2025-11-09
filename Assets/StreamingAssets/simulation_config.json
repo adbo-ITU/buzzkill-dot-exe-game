@@ -1,5 +1,6 @@
 {
-  "numBees": 200,
-  "numHives": 4,
-  "numFlowers": 200
+  "numBees": 500,
+  "numHives": 3,
+  "numFlowers": 2000,
+  "worldSize": 100
 }

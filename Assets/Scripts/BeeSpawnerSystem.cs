@@ -25,7 +25,7 @@ public partial struct BeeSpawnerSystem : ISystem
         state.Enabled = false;
         
         var hiveManager = SystemAPI.GetSingleton<HiveManager>();
-        var config = SystemAPI.GetSingleton<SimulationConfig>().Config;
+        var config = SystemAPI.GetSingleton<SimulationConfig>().config;
         
         EntityCommandBuffer.ParallelWriter ecb =
             SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
