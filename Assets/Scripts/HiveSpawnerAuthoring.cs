@@ -5,7 +5,6 @@ using UnityEngine;
 public class HiveSpawnerAuthoring : MonoBehaviour
 {
     public GameObject hivePrefab;
-    public int numHives;
 
     class Baker : Baker<HiveSpawnerAuthoring>
     {
@@ -15,7 +14,6 @@ public class HiveSpawnerAuthoring : MonoBehaviour
             var spawner = new HiveSpawner
             {
                 hivePrefab = GetEntity(authoring.hivePrefab, TransformUsageFlags.Dynamic),
-                numHives = authoring.numHives,
             };
             AddComponent(entity, spawner);
         }
@@ -25,5 +23,4 @@ public class HiveSpawnerAuthoring : MonoBehaviour
 public struct HiveSpawner : IComponentData
 {
     public Entity hivePrefab;
-    public int numHives;
 }
