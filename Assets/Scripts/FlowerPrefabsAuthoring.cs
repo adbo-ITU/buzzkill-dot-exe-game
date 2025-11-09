@@ -1,7 +1,7 @@
 using Unity.Entities;
 using UnityEngine;
 
-public class FlowerSpawnerAuthoring : MonoBehaviour
+public class FlowerPrefabsAuthoring : MonoBehaviour
 {
     public GameObject flowerPrefabA;
     public GameObject flowerPrefabB;
@@ -9,12 +9,12 @@ public class FlowerSpawnerAuthoring : MonoBehaviour
     public GameObject flowerPrefabD;
     public GameObject flowerPrefabE;
 
-    class Baker : Baker<FlowerSpawnerAuthoring>
+    class Baker : Baker<FlowerPrefabsAuthoring>
     {
-        public override void Bake(FlowerSpawnerAuthoring authoring)
+        public override void Bake(FlowerPrefabsAuthoring authoring)
         {
             var entity = GetEntity(authoring, TransformUsageFlags.None);
-            var spawner = new FlowerSpawner
+            var spawner = new FlowerPrefabs
             {
                 flowerPrefabA = GetEntity(authoring.flowerPrefabA, TransformUsageFlags.Dynamic),
                 flowerPrefabB = GetEntity(authoring.flowerPrefabB, TransformUsageFlags.Dynamic),
@@ -27,7 +27,7 @@ public class FlowerSpawnerAuthoring : MonoBehaviour
     }
 }
 
-public struct FlowerSpawner : IComponentData
+public struct FlowerPrefabs : IComponentData
 {
     public Entity flowerPrefabA;
     public Entity flowerPrefabB;

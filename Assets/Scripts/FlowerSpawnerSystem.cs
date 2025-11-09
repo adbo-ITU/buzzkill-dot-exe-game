@@ -11,7 +11,7 @@ public partial struct FlowerSpawnerSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.RequireForUpdate<FlowerSpawner>();
+        state.RequireForUpdate<FlowerPrefabs>();
         state.RequireForUpdate<SimulationConfig>();
     }
 
@@ -21,8 +21,8 @@ public partial struct FlowerSpawnerSystem : ISystem
         state.Enabled = false;
         
         var em = state.EntityManager;
-        var spawner = SystemAPI.GetSingleton<FlowerSpawner>();
         var config = SystemAPI.GetSingleton<SimulationConfig>().Config;
+        var flowerPrefabs = SystemAPI.GetSingleton<FlowerPrefabs>();
         var rnd = new Random(42);  //TODO: should seed always be 42??
         
         var flowerManager = new FlowerManager
@@ -36,11 +36,11 @@ public partial struct FlowerSpawnerSystem : ISystem
         
         var prefabs = new NativeArray<Entity>(5, Allocator.Temp)
         {
-            [0] = spawner.flowerPrefabA,
-            [1] = spawner.flowerPrefabB,
-            [2] = spawner.flowerPrefabC,
-            [3] = spawner.flowerPrefabD,
-            [4] = spawner.flowerPrefabE,
+            [0] = flowerPrefabs.flowerPrefabA,
+            [1] = flowerPrefabs.flowerPrefabB,
+            [2] = flowerPrefabs.flowerPrefabC,
+            [3] = flowerPrefabs.flowerPrefabD,
+            [4] = flowerPrefabs.flowerPrefabE,
         };
 
         for (int i = 0; i < config.numFlowers; i++)
