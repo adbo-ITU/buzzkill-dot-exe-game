@@ -16,6 +16,7 @@ public partial struct BeeSpawnerSystem : ISystem
         state.RequireForUpdate<BeeSpawner>();
         state.RequireForUpdate<HiveData>();
         state.RequireForUpdate<HiveManager>();
+        state.RequireForUpdate<SimulationConfig>();
     }
 
     [BurstCompile]
@@ -24,6 +25,7 @@ public partial struct BeeSpawnerSystem : ISystem
         state.Enabled = false;
         
         var hiveManager = SystemAPI.GetSingleton<HiveManager>();
+        var config = SystemAPI.GetSingleton<SimulationConfig>().Config;
         
         EntityCommandBuffer.ParallelWriter ecb =
             SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
@@ -34,6 +36,7 @@ public partial struct BeeSpawnerSystem : ISystem
             time = SystemAPI.Time.ElapsedTime,
             ecb = ecb,
             hiveManager = hiveManager,
+            config = config,
         }.Schedule(state.Dependency);
 
         handle.Complete();
@@ -46,11 +49,12 @@ public partial struct BeeSpawnJob : IJobEntity
     public double time;
     public EntityCommandBuffer.ParallelWriter ecb;
     [ReadOnly] public HiveManager  hiveManager;
+    [ReadOnly] public SimulationConfigValues config;
 
     public void Execute([ChunkIndexInQuery] int chunkKey, ref BeeSpawner spawner, Entity entity)
     {
         var rng = BeeData.GetRng(time, entity);
-        for (int i = 0; i < spawner.numBees; i++)
+        for (int i = 0; i < config.numBees; i++)
         {
             var (hiveEntity, hiveData) = hiveManager.GetRandomHive(ref rng);
             
