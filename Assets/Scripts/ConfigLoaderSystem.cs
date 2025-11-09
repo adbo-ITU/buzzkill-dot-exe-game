@@ -25,11 +25,11 @@ partial struct ConfigLoaderSystem : ISystem
         }
 
         var jsonText = File.ReadAllText(path);
-        var config = JsonUtility.FromJson<SimulationConfig>(jsonText);
+        var config = JsonUtility.FromJson<SimulationConfigValues>(jsonText);
         
         Debug.Log($"Config file loaded at: {path}: {jsonText}");
         
-        state.EntityManager.CreateSingleton(new SimulationConfigComponent { Config = config });
+        state.EntityManager.CreateSingleton(new SimulationConfig { Config = config });
     }
 
     [BurstCompile]
@@ -39,13 +39,13 @@ partial struct ConfigLoaderSystem : ISystem
     }
 }
 
-public struct SimulationConfigComponent : IComponentData
+public struct SimulationConfig : IComponentData
 {
-    public SimulationConfig Config;
+    public SimulationConfigValues Config;
 }
 
 [System.Serializable]
-public struct SimulationConfig
+public struct SimulationConfigValues
 {
     public int numBees;
     public int numHives;
