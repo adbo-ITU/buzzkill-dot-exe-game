@@ -8,7 +8,6 @@ public class FlowerSpawnerAuthoring : MonoBehaviour
     public GameObject flowerPrefabC;
     public GameObject flowerPrefabD;
     public GameObject flowerPrefabE;
-    public int numFlowers;
 
     class Baker : Baker<FlowerSpawnerAuthoring>
     {
@@ -22,7 +21,6 @@ public class FlowerSpawnerAuthoring : MonoBehaviour
                 flowerPrefabC = GetEntity(authoring.flowerPrefabC, TransformUsageFlags.Dynamic),
                 flowerPrefabD = GetEntity(authoring.flowerPrefabD, TransformUsageFlags.Dynamic),
                 flowerPrefabE = GetEntity(authoring.flowerPrefabE, TransformUsageFlags.Dynamic),
-                numFlower = authoring.numFlowers,
             };
             AddComponent(entity, spawner);
         }
@@ -36,5 +34,4 @@ public struct FlowerSpawner : IComponentData
     public Entity flowerPrefabC;
     public Entity flowerPrefabD;
     public Entity flowerPrefabE;
-    public int numFlower;
 }

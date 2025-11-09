@@ -12,6 +12,7 @@ public partial struct FlowerSpawnerSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<FlowerSpawner>();
+        state.RequireForUpdate<SimulationConfig>();
     }
 
     [BurstCompile]
@@ -21,12 +22,13 @@ public partial struct FlowerSpawnerSystem : ISystem
         
         var em = state.EntityManager;
         var spawner = SystemAPI.GetSingleton<FlowerSpawner>();
+        var config = SystemAPI.GetSingleton<SimulationConfig>().Config;
         var rnd = new Random(42);  //TODO: should seed always be 42??
         
         var flowerManager = new FlowerManager
         {
-            flowerEntities = new NativeArray<Entity>(spawner.numFlower, Allocator.Persistent),
-            flowerData = new NativeArray<FlowerData>(spawner.numFlower, Allocator.Persistent),
+            flowerEntities = new NativeArray<Entity>(config.numFlowers, Allocator.Persistent),
+            flowerData = new NativeArray<FlowerData>(config.numFlowers, Allocator.Persistent),
         };
         
         var flowerManagerEntity = em.CreateEntity();
@@ -41,7 +43,7 @@ public partial struct FlowerSpawnerSystem : ISystem
             [4] = spawner.flowerPrefabE,
         };
 
-        for (int i = 0; i < spawner.numFlower; i++)
+        for (int i = 0; i < config.numFlowers; i++)
         {
             const float flowerHeight = 5f;
             
