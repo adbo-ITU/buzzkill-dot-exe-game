@@ -11,7 +11,8 @@ public partial struct FlowerSpawnerSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.RequireForUpdate<FlowerSpawner>();
+        state.RequireForUpdate<FlowerPrefabs>();
+        state.RequireForUpdate<SimulationConfig>();
     }
 
     [BurstCompile]
@@ -20,13 +21,14 @@ public partial struct FlowerSpawnerSystem : ISystem
         state.Enabled = false;
         
         var em = state.EntityManager;
-        var spawner = SystemAPI.GetSingleton<FlowerSpawner>();
+        var config = SystemAPI.GetSingleton<SimulationConfig>().config;
+        var flowerPrefabs = SystemAPI.GetSingleton<FlowerPrefabs>();
         var rnd = new Random(42);  //TODO: should seed always be 42??
         
         var flowerManager = new FlowerManager
         {
-            flowerEntities = new NativeArray<Entity>(spawner.numFlower, Allocator.Persistent),
-            flowerData = new NativeArray<FlowerData>(spawner.numFlower, Allocator.Persistent),
+            flowerEntities = new NativeArray<Entity>(config.numFlowers, Allocator.Persistent),
+            flowerData = new NativeArray<FlowerData>(config.numFlowers, Allocator.Persistent),
         };
         
         var flowerManagerEntity = em.CreateEntity();
@@ -34,19 +36,19 @@ public partial struct FlowerSpawnerSystem : ISystem
         
         var prefabs = new NativeArray<Entity>(5, Allocator.Temp)
         {
-            [0] = spawner.flowerPrefabA,
-            [1] = spawner.flowerPrefabB,
-            [2] = spawner.flowerPrefabC,
-            [3] = spawner.flowerPrefabD,
-            [4] = spawner.flowerPrefabE,
+            [0] = flowerPrefabs.flowerPrefabA,
+            [1] = flowerPrefabs.flowerPrefabB,
+            [2] = flowerPrefabs.flowerPrefabC,
+            [3] = flowerPrefabs.flowerPrefabD,
+            [4] = flowerPrefabs.flowerPrefabE,
         };
 
-        for (int i = 0; i < spawner.numFlower; i++)
+        for (int i = 0; i < config.numFlowers; i++)
         {
             const float flowerHeight = 5f;
             
-            float x = rnd.NextFloat(0f, 50f);
-            float z = rnd.NextFloat(0f, 50f);
+            float x = rnd.NextFloat(0f, config.worldSize);
+            float z = rnd.NextFloat(0f, config.worldSize);
             float3 pos = new float3(x, 0, z); 
 
             var prefab = prefabs[rnd.NextInt(prefabs.Length)];

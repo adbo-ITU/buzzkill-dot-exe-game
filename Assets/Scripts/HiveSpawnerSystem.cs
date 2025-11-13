@@ -12,6 +12,7 @@ public partial struct HiveSpawnerSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<HiveSpawner>();
+        state.RequireForUpdate<SimulationConfig>();
     }
 
     [BurstCompile]
@@ -20,13 +21,14 @@ public partial struct HiveSpawnerSystem : ISystem
         state.Enabled = false;
         
         var em = state.EntityManager;
+        var config = SystemAPI.GetSingleton<SimulationConfig>().config;
         var spawner = SystemAPI.GetSingleton<HiveSpawner>();
         var rnd = new Random(42); //TODO: should seed always be 42??
         
         var hiveManager = new HiveManager
         {
-            hiveEntities = new NativeArray<Entity>(spawner.numHives, Allocator.Persistent),
-            hiveData = new NativeArray<HiveData>(spawner.numHives, Allocator.Persistent),
+            hiveEntities = new NativeArray<Entity>(config.numHives, Allocator.Persistent),
+            hiveData = new NativeArray<HiveData>(config.numHives, Allocator.Persistent),
         };
         
         var hiveManagerEntity = em.CreateEntity();
@@ -34,12 +36,12 @@ public partial struct HiveSpawnerSystem : ISystem
         
         var prefab = spawner.hivePrefab;
         
-        for (int i = 0; i < spawner.numHives; i++)
+        for (int i = 0; i < config.numHives; i++)
         {
             const float hiveHeight = 5f;
             
-            float x = rnd.NextFloat(0f, 50f); // TODO: adjust to world size
-            float z = rnd.NextFloat(0f, 50f);
+            float x = rnd.NextFloat(0f, config.worldSize);
+            float z = rnd.NextFloat(0f, config.worldSize);
             float3 pos = new float3(x, 0, z); 
 
             var e =  em.Instantiate(prefab);

@@ -1,40 +1,37 @@
 using Unity.Entities;
 using UnityEngine;
 
-public class FlowerSpawnerAuthoring : MonoBehaviour
+public class FlowerPrefabsAuthoring : MonoBehaviour
 {
     public GameObject flowerPrefabA;
     public GameObject flowerPrefabB;
     public GameObject flowerPrefabC;
     public GameObject flowerPrefabD;
     public GameObject flowerPrefabE;
-    public int numFlowers;
 
-    class Baker : Baker<FlowerSpawnerAuthoring>
+    class Baker : Baker<FlowerPrefabsAuthoring>
     {
-        public override void Bake(FlowerSpawnerAuthoring authoring)
+        public override void Bake(FlowerPrefabsAuthoring authoring)
         {
             var entity = GetEntity(authoring, TransformUsageFlags.None);
-            var spawner = new FlowerSpawner
+            var spawner = new FlowerPrefabs
             {
                 flowerPrefabA = GetEntity(authoring.flowerPrefabA, TransformUsageFlags.Dynamic),
                 flowerPrefabB = GetEntity(authoring.flowerPrefabB, TransformUsageFlags.Dynamic),
                 flowerPrefabC = GetEntity(authoring.flowerPrefabC, TransformUsageFlags.Dynamic),
                 flowerPrefabD = GetEntity(authoring.flowerPrefabD, TransformUsageFlags.Dynamic),
                 flowerPrefabE = GetEntity(authoring.flowerPrefabE, TransformUsageFlags.Dynamic),
-                numFlower = authoring.numFlowers,
             };
             AddComponent(entity, spawner);
         }
     }
 }
 
-public struct FlowerSpawner : IComponentData
+public struct FlowerPrefabs : IComponentData
 {
     public Entity flowerPrefabA;
     public Entity flowerPrefabB;
     public Entity flowerPrefabC;
     public Entity flowerPrefabD;
     public Entity flowerPrefabE;
-    public int numFlower;
 }

@@ -1,0 +1,6 @@
+{
+  "numBees": 500,
+  "numHives": 3,
+  "numFlowers": 2000,
+  "worldSize": 100
+}

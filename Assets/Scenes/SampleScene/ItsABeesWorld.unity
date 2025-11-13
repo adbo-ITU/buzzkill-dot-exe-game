@@ -130,7 +130,7 @@ GameObject:
   - component: {fileID: 1930677070}
   - component: {fileID: 1930677069}
   m_Layer: 0
-  m_Name: FlowerSpawner
+  m_Name: FlowerPrefabs
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -153,7 +153,6 @@ MonoBehaviour:
   flowerPrefabC: {fileID: 919132149155446097, guid: 33258481a8f1e714b9a233ce743367f4, type: 3}
   flowerPrefabD: {fileID: 919132149155446097, guid: 489134b2de1e664459f59d89a80b895f, type: 3}
   flowerPrefabE: {fileID: 1795514364784391594, guid: cb912b52e9f2b5448acdbe992883c427, type: 3}
-  numFlowers: 100
 --- !u!4 &1930677070
 Transform:
   m_ObjectHideFlags: 0
@@ -200,7 +199,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   beePrefab: {fileID: 4615560902193265911, guid: a1c51983d2f3643f49870c8dadadc872, type: 3}
   numBees: 20
-  numHives: 3
 --- !u!4 &2039319760
 Transform:
   m_ObjectHideFlags: 0
