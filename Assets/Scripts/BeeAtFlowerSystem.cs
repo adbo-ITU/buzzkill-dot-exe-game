@@ -92,7 +92,6 @@ public partial struct BeeAtFlowerJob : IJobEntity
         if (!flowerIsEmpty && !beeIsSaturated) return;
 
         ecb.RemoveComponent<AtFlower>(chunkKey, entity);
-        ecb.AddComponent(chunkKey, bee.targetFlower, new FlowerRegenerationTag());
         float3 to;
         if (beeIsSaturated)
         {

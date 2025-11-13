@@ -48,7 +48,7 @@ public partial struct FlowerNectarJob : IJobEntity
     public float deltaTime;
     public float nectarRegenRate;
 
-    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, in FlowerRegenerationTag regenTag,
+    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity,
         ref FlowerData flower)
     {
         flower.nectarAmount += nectarRegenRate * deltaTime;

@@ -29,5 +29,3 @@ public struct FlowerData : IComponentData
     public float nectarAmount;
     public float3 position;
 }
-
-public struct FlowerRegenerationTag : IComponentData {}
