@@ -64,8 +64,10 @@ public partial struct FlowerSpawnerSystem : ISystem
             flowerManager.flowerData[i] = flowerData;
                 
             em.AddComponentData(e, flowerData);
+
             var transform = LocalTransform.FromPosition(pos).WithScale(flowerHeight);
             em.SetComponentData(e, transform);
+            
         }
 
         prefabs.Dispose();

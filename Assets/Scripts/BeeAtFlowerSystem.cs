@@ -92,7 +92,6 @@ public partial struct BeeAtFlowerJob : IJobEntity
         if (!flowerIsEmpty && !beeIsSaturated) return;
 
         ecb.RemoveComponent<AtFlower>(chunkKey, entity);
-
         float3 to;
         if (beeIsSaturated)
         {
