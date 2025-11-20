@@ -63,7 +63,7 @@ public partial struct BeeSpawnJob : IJobEntity
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
             ecb.AddComponent(chunkKey, e, new BeeData
             {
-                speed = 20,
+                speed = rng.NextFloat(4f, 7f),
                 nectarCapacity = 40,
                 nectarCarried = 0,
                 homeHive = hiveEntity,
@@ -88,7 +88,7 @@ public partial struct BeeSpawnJob : IJobEntity
                 new Material
                 {
                     Friction      = 0.1f,
-                    Restitution   = 0.8f, // bounciness
+                    Restitution   = 1f, // bounciness
                     FrictionCombinePolicy    = Material.CombinePolicy.GeometricMean,
                     RestitutionCombinePolicy = Material.CombinePolicy.Maximum
                 }
@@ -107,7 +107,7 @@ public partial struct BeeSpawnJob : IJobEntity
                     Volume = 1f,
                     AngularExpansionFactor = 0f
                 },
-                1
+                5
             );
             ecb.AddComponent(chunkKey, e, mass);
 
