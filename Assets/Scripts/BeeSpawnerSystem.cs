@@ -3,7 +3,8 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
+using Unity.Physics;
+using Material = Unity.Physics.Material;
 
 [UpdateAfter(typeof(FlowerSpawnerSystem))] 
 [UpdateAfter(typeof(HiveSpawnerSystem))]
@@ -57,6 +58,8 @@ public partial struct BeeSpawnJob : IJobEntity
         for (int i = 0; i < config.numBees; i++)
         {
             var (hiveEntity, hiveData) = hiveManager.GetRandomHive(ref rng);
+
+            var randPos = math.float3(i * 2, 25.0f, 0.0f);
             
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
             ecb.AddComponent(chunkKey, e, new BeeData
@@ -68,7 +71,57 @@ public partial struct BeeSpawnJob : IJobEntity
                 targetFlower = Entity.Null,
             });
             ecb.AddComponent(chunkKey, e, new AtHive());
-            ecb.SetComponent(chunkKey, e, LocalTransform.FromPosition(hiveData.position));
+            ecb.AddComponent(chunkKey, e, LocalTransform.FromPosition(randPos));
+
+            var collider = Unity.Physics.SphereCollider.Create(
+                new SphereGeometry
+                {
+                    Center = float3.zero,
+                    Radius = 1
+                },
+                new CollisionFilter
+                {
+                    BelongsTo = ~0u,      // everything, adjust if you want layers
+                    CollidesWith = ~0u,   // collide with everything
+                    GroupIndex = 0
+                },
+                new Material
+                {
+                    Friction      = 0.1f,
+                    Restitution   = 0.8f, // bounciness
+                    FrictionCombinePolicy    = Material.CombinePolicy.GeometricMean,
+                    RestitutionCombinePolicy = Material.CombinePolicy.Maximum
+                }
+            );
+
+            ecb.AddComponent(chunkKey, e, new PhysicsCollider { Value = collider });
+            
+            var mass = PhysicsMass.CreateDynamic(
+                new MassProperties
+                {
+                    MassDistribution = new MassDistribution
+                    {
+                        Transform = RigidTransform.identity,
+                        InertiaTensor = new float3(1f)
+                    },
+                    Volume = 1f,
+                    AngularExpansionFactor = 0f
+                },
+                1
+            );
+            ecb.AddComponent(chunkKey, e, mass);
+
+            ecb.AddComponent(chunkKey, e, new PhysicsVelocity
+            {
+                Linear  = math.float3(0f, 0f, 1f),
+                Angular = float3.zero
+            });
+            
+            ecb.AddComponent(chunkKey, e, new PhysicsDamping
+            {
+                Linear  = 0.0f,
+                Angular = 0.0f
+            });
         }
     }
 }

@@ -19,6 +19,8 @@ partial struct BeeFlyingSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        return;
+
         EntityCommandBuffer.ParallelWriter ecb =
             SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
                 .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
@@ -89,7 +91,7 @@ public partial struct BeeToFlowerJob : IJobEntity
     void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, in TravellingToFlower travellingToFlower)
     {
         var moved = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime);
-
+        
         if (!moved)
         {
             ecb.RemoveComponent<TravellingToFlower>(chunkKey, entity);

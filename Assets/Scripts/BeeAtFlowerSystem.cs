@@ -26,6 +26,8 @@ partial struct BeeAtFlowerSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        return;
+
         EntityCommandBuffer.ParallelWriter ecb =
             SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
                 .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
