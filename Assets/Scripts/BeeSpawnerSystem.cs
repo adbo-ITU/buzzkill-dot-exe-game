@@ -64,7 +64,7 @@ public partial struct BeeSpawnJob : IJobEntity
             ecb.AddComponent(chunkKey, e, new BeeData
             {
                 speed = rng.NextFloat(4f, 7f),
-                nectarCapacity = 40,
+                nectarCapacity = rng.NextFloat(20f, 40f),
                 nectarCarried = 0,
                 homeHive = hiveEntity,
                 targetFlower = Entity.Null,
