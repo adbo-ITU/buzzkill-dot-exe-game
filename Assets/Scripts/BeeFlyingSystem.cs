@@ -66,8 +66,8 @@ partial struct BeeFlyingSystem : ISystem
         var straightVel = direction * bee.speed * 5f;
 
         var orthogonal = math.normalize(math.cross(direction, math.up()));
-        var verticalWiggle = math.sin(flightPath.time * 7f) * math.up() / 8f;
-        var horizontalWiggle = orthogonal * math.cos(flightPath.time * 15f) / 3f;
+        var verticalWiggle = math.sin(flightPath.time * 7f) * math.up() / 5f;
+        var horizontalWiggle = orthogonal * math.cos(flightPath.time * 15f) / 2f;
         var wiggle = (verticalWiggle + horizontalWiggle);
 
         if (distance >= 2f)
@@ -76,12 +76,17 @@ partial struct BeeFlyingSystem : ISystem
                 mass,
                 float3.zero,
                 quaternion.identity,
-                wiggle,
+                wiggle * deltaTime * 250f,
                 trans.Position);
         }
         
         var desiredVel = straightVel;
         var lerpFactor = math.saturate(deltaTime * 1.5f);
+        
+        if (math.distancesq(flightPath.from, trans.Position) < math.distancesq(flightPath.to, trans.Position))
+        {
+            desiredVel += math.up() * math.min(100f, 10f / math.distance(flightPath.from, trans.Position));
+        }
 
         velocity.Angular = float3.zero;
         velocity.Linear = math.lerp(velocity.Linear, desiredVel, lerpFactor);
