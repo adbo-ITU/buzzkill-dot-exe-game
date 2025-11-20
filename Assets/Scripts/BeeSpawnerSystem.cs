@@ -88,7 +88,7 @@ public partial struct BeeSpawnJob : IJobEntity
                 new Material
                 {
                     Friction      = 0.1f,
-                    Restitution   = 1f, // bounciness
+                    Restitution   = 1.2f, // bounciness
                     FrictionCombinePolicy    = Material.CombinePolicy.GeometricMean,
                     RestitutionCombinePolicy = Material.CombinePolicy.Maximum
                 }
