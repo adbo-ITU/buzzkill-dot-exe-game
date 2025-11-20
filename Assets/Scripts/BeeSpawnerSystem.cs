@@ -73,11 +73,12 @@ public partial struct BeeSpawnJob : IJobEntity
             ecb.AddComponent(chunkKey, e, new AtHive());
             ecb.AddComponent(chunkKey, e, LocalTransform.FromPosition(randPos));
 
-            var collider = Unity.Physics.SphereCollider.Create(
-                new SphereGeometry
+            var collider = Unity.Physics.BoxCollider.Create(
+                new BoxGeometry
                 {
                     Center = float3.zero,
-                    Radius = 1
+                    Size = 1f,
+                    Orientation = quaternion.identity,
                 },
                 new CollisionFilter
                 {
