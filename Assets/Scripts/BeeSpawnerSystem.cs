@@ -58,9 +58,8 @@ public partial struct BeeSpawnJob : IJobEntity
         for (int i = 0; i < config.numBees; i++)
         {
             var (hiveEntity, hiveData) = hiveManager.GetRandomHive(ref rng);
+            var spawnPos = hiveData.position;
 
-            var randPos = math.float3(i * 2, 25.0f, 0.0f);
-            
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
             ecb.AddComponent(chunkKey, e, new BeeData
             {
@@ -71,7 +70,7 @@ public partial struct BeeSpawnJob : IJobEntity
                 targetFlower = Entity.Null,
             });
             ecb.AddComponent(chunkKey, e, new AtHive());
-            ecb.AddComponent(chunkKey, e, LocalTransform.FromPosition(randPos));
+            ecb.AddComponent(chunkKey, e, LocalTransform.FromPosition(spawnPos));
 
             var collider = Unity.Physics.BoxCollider.Create(
                 new BoxGeometry
@@ -114,7 +113,7 @@ public partial struct BeeSpawnJob : IJobEntity
 
             ecb.AddComponent(chunkKey, e, new PhysicsVelocity
             {
-                Linear  = math.float3(0f, 0f, 1f),
+                Linear  = float3.zero,
                 Angular = float3.zero
             });
             
