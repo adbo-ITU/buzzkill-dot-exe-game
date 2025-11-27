@@ -58,7 +58,19 @@ public partial struct BeeSpawnJob : IJobEntity
         for (int i = 0; i < config.numBees; i++)
         {
             var (hiveEntity, hiveData) = hiveManager.GetRandomHive(ref rng);
-            var spawnPos = hiveData.position;
+
+            // Spawns bees in incrementing positions of a 3D grid centered around the hive centre. Avoids bees spawning
+            // inside one another, preventing collisions during spawn.
+            var offsetSize = 10;
+            var gap = 0.25f;
+            var centerSize = (1 + gap) * offsetSize / 2;
+
+            var perOffsetLevel = offsetSize * offsetSize;
+            var (level, iInLevel) = (i / perOffsetLevel, i % perOffsetLevel);
+            var offsetRow = iInLevel / offsetSize - centerSize;
+            var offsetCol = iInLevel % offsetSize - centerSize;
+
+            var spawnPos = hiveData.position + (1 + gap) * math.float3(offsetRow, level, offsetCol);
 
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
             ecb.AddComponent(chunkKey, e, new BeeData
