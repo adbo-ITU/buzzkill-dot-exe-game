@@ -27,7 +27,7 @@ partial struct FlowerNectarSystem : ISystem
         {
             ecb = ecb,
             deltaTime = SystemAPI.Time.DeltaTime,
-            nectarRegenRate = 5f,
+            nectarRegenRate = 1.5f,
         }.Schedule(state.Dependency);
         
         flowerNectarJob.Complete();
