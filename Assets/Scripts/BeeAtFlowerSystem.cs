@@ -100,7 +100,7 @@ public partial struct BeeAtFlowerJob : IJobEntity
 
         velocity.Angular = math.float3(2f, 2f, 2f);
 
-        var maxNectarToTake = 2f * deltaTime;
+        var maxNectarToTake = 5f * deltaTime;
         var nectarBeeCanTake = math.min(maxNectarToTake, bee.nectarCapacity - bee.nectarCarried);
 
         if (flower.ValueRW.nectarAmount > 0)
