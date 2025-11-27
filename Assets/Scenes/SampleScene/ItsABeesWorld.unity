@@ -432,7 +432,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09ba8ac9c476c405fbd6e4e240b06596, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hivePrefab: {fileID: 919132149155446097, guid: 53a627edb1ee64f579849f585aade866, type: 3}
+  hivePrefab: {fileID: 919132149155446097, guid: fcf9a9438f2ec478685bb4cdca77e18b, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
