@@ -65,7 +65,7 @@ public partial struct BeeAtHiveJob : IJobEntity
         var hiveData = hiveLookup[hive];
         
         var maxNectarToGive = 2f * deltaTime;
-        var nectarGiven = math.max(bee.nectarCarried, maxNectarToGive);
+        var nectarGiven = math.min(bee.nectarCarried, maxNectarToGive);
         bee.nectarCarried -= nectarGiven;
         hiveData.nectarAmount += nectarGiven;
         hiveLookup[hive] = hiveData;
