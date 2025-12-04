@@ -93,7 +93,7 @@ partial struct BeeFlyingSystem : ISystem
         // Make the bee face its movement direction
         if (math.lengthsq(velocity.Linear) > 0.01f)
         {
-            var targetRotation = quaternion.LookRotationSafe(math.normalize(velocity.Linear), math.up());
+            var targetRotation = quaternion.LookRotationSafe(math.normalize(desiredVel), math.up());
             trans.Rotation = math.slerp(trans.Rotation, targetRotation, math.saturate(deltaTime * 10f));
         }
 
