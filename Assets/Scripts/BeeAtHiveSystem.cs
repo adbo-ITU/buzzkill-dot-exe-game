@@ -2,6 +2,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
 using Random = Unity.Mathematics.Random;
@@ -63,8 +64,8 @@ public partial struct BeeAtHiveJob : IJobEntity
         if (!hiveLookup.HasComponent(hive)) return;
         var hiveData = hiveLookup[hive];
         
-        var maxNectarToGive = 2f * deltaTime;
-        var nectarGiven = math.max(bee.nectarCarried, maxNectarToGive);
+        var maxNectarToGive = 5f * deltaTime;
+        var nectarGiven = math.min(bee.nectarCarried, maxNectarToGive);
         bee.nectarCarried -= nectarGiven;
         hiveData.nectarAmount += nectarGiven;
         hiveLookup[hive] = hiveData;

@@ -4,6 +4,8 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Physics;
+using Unity.Physics.Extensions;
 using Unity.Transforms;
 using UnityEngine;
 using Random = Unity.Mathematics.Random;
@@ -66,17 +68,39 @@ public partial struct BeeAtFlowerJob : IJobEntity
     
     public EntityCommandBuffer.ParallelWriter ecb;
 
-    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, in AtFlower atFlower, ref BeeData bee)
+    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, in AtFlower atFlower, ref BeeData bee,
+        ref PhysicsVelocity velocity,
+        in PhysicsMass mass
+        )
     {
-        var rot = math.mul(quaternion.RotateZ(2f * deltaTime), quaternion.RotateY(2f * deltaTime));
-        trans.Rotation = math.mul(trans.Rotation, rot);
+        // var rot = math.mul(quaternion.RotateZ(2f * deltaTime), quaternion.RotateY(2f * deltaTime));
+        // trans.Rotation = math.mul(trans.Rotation, rot);
         
         var targetFlower = bee.targetFlower;
         if (targetFlower == Entity.Null) return;
 
         var flower = flowerLookup.GetRefRW(targetFlower);
 
-        var maxNectarToTake = 2f * deltaTime;
+        var between = flower.ValueRO.position - trans.Position;
+        var dist = math.length(between);
+        
+        if (dist > 1f)
+        {
+            velocity.ApplyImpulse(
+                mass,
+                float3.zero,
+                quaternion.identity,
+                math.normalizesafe(between) * dist,
+                trans.Position);
+        }
+        else
+        {
+            velocity.Linear = float3.zero;
+        }
+
+        velocity.Angular = math.float3(2f, 2f, 2f);
+
+        var maxNectarToTake = 5f * deltaTime;
         var nectarBeeCanTake = math.min(maxNectarToTake, bee.nectarCapacity - bee.nectarCarried);
 
         if (flower.ValueRW.nectarAmount > 0)

@@ -4,7 +4,10 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Physics;
+using Unity.Physics.Extensions;
 using Unity.Transforms;
+using UnityEngine;
 using Vector3 = UnityEngine.Vector3;
 
 
@@ -47,36 +50,54 @@ partial struct BeeFlyingSystem : ISystem
     }
     
     [BurstCompile]
-    public static bool TravelBee(ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, float deltaTime)
+    public static bool TravelBee(ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, float deltaTime, ref PhysicsVelocity velocity, in PhysicsMass mass)
     {
-        var between = flightPath.to - flightPath.position;
+        var between = flightPath.to - trans.Position;
         var distance = math.length(between);
 
         if (distance <= 1)
         {
-            return false;
+            return true;
         }
         
         flightPath.time += deltaTime;
 
         var direction = math.normalize(between);
-        flightPath.position += direction * bee.speed * deltaTime;
-        
-        var totalDist = math.length(flightPath.to - flightPath.from);
-        var travelled = math.length(flightPath.position - flightPath.from);
-        var progress = travelled / totalDist;
-
-        var height = math.sin(progress * math.PI) * totalDist / 10f;
-        var arc = math.up() * height;
+        var straightVel = direction * bee.speed * 5f;
 
         var orthogonal = math.normalize(math.cross(direction, math.up()));
-        var verticalWiggle = math.sin(flightPath.time * 10f) * math.up() / 3f;
-        var horizontalWiggle = orthogonal * math.cos(flightPath.time * 20f) / 2f;
-        var wiggle = verticalWiggle + horizontalWiggle;
-        
-        trans.Position = flightPath.position + arc + wiggle;
+        var verticalWiggle = math.sin(flightPath.time * 7f) * math.up() / 5f;
+        var horizontalWiggle = orthogonal * math.cos(flightPath.time * 15f) / 2f;
+        var wiggle = (verticalWiggle + horizontalWiggle);
 
-        return true;
+        if (distance >= 2f)
+        {
+            velocity.ApplyImpulse(
+                mass,
+                float3.zero,
+                quaternion.identity,
+                wiggle * deltaTime * 250f,
+                trans.Position);
+        }
+        
+        var desiredVel = straightVel;
+        var lerpFactor = math.saturate(deltaTime * 1.5f);
+        
+        if (math.distancesq(flightPath.from, trans.Position) < math.distancesq(flightPath.to, trans.Position))
+        {
+            desiredVel += math.up() * math.min(100f, 10f / math.distance(flightPath.from, trans.Position));
+        }
+
+        velocity.Angular = float3.zero;
+        velocity.Linear = math.lerp(velocity.Linear, desiredVel, lerpFactor);
+        // Make the bee face its movement direction
+        if (math.lengthsq(velocity.Linear) > 0.01f)
+        {
+            var targetRotation = quaternion.LookRotationSafe(math.normalize(desiredVel), math.up());
+            trans.Rotation = math.slerp(trans.Rotation, targetRotation, math.saturate(deltaTime * 10f));
+        }
+
+        return false;
     }
 }
 
@@ -86,11 +107,12 @@ public partial struct BeeToFlowerJob : IJobEntity
     public EntityCommandBuffer.ParallelWriter ecb;
     public float deltaTime;
 
-    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, in TravellingToFlower travellingToFlower)
+    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, in TravellingToFlower travellingToFlower,
+        ref PhysicsVelocity velocity, in PhysicsMass mass)
     {
-        var moved = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime);
-
-        if (!moved)
+        var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime, ref velocity, in mass);
+        
+        if (reachedDest)
         {
             ecb.RemoveComponent<TravellingToFlower>(chunkKey, entity);
             ecb.AddComponent(chunkKey, entity, new AtFlower());
@@ -104,11 +126,11 @@ public partial struct BeeToHiveJob : IJobEntity
     public EntityCommandBuffer.ParallelWriter ecb;
     public float deltaTime;
 
-    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, in TravellingToHome travellingToHome)
+    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, in TravellingToHome travellingToHome, ref  PhysicsVelocity velocity, in PhysicsMass mass)
     {
-        var moved = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime);
-
-        if (!moved)
+        var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime, ref velocity, in mass);
+        
+        if (reachedDest)
         {
             ecb.RemoveComponent<TravellingToHome>(chunkKey, entity);
             ecb.AddComponent(chunkKey, entity, new AtHive());
