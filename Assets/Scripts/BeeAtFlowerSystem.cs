@@ -20,6 +20,7 @@ partial struct BeeAtFlowerSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
+        state.RequireForUpdate<SimulationConfig>();
         state.RequireForUpdate<FlowerManager>();
         _flowerLookup = state.GetComponentLookup<FlowerData>(isReadOnly: false);
         _hiveLookup = state.GetComponentLookup<HiveData>(isReadOnly: true);
@@ -28,6 +29,8 @@ partial struct BeeAtFlowerSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        var config = SystemAPI.GetSingleton<SimulationConfig>().config;
+        
         EntityCommandBuffer.ParallelWriter ecb =
             SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
                 .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
@@ -37,17 +40,40 @@ partial struct BeeAtFlowerSystem : ISystem
         
         var flowerManager = SystemAPI.GetSingleton<FlowerManager>();
         
-        var atFlowerJob = new BeeAtFlowerJob
+        switch (config.executionMode)
         {
-            time = SystemAPI.Time.ElapsedTime,
-            deltaTime = SystemAPI.Time.DeltaTime,
-            flowerLookup = _flowerLookup,
-            hiveLookup = _hiveLookup,
-            ecb = ecb,
-            flowerManager = flowerManager
-        }.Schedule(state.Dependency);
+            case ExecutionMode.MainThread: throw new NotImplementedException(); break;
 
-        atFlowerJob.Complete();
+            case ExecutionMode.Scheduled:
+            {
+                var atFlowerJob = new BeeAtFlowerJob
+                {
+                    time = SystemAPI.Time.ElapsedTime,
+                    deltaTime = SystemAPI.Time.DeltaTime,
+                    flowerLookup = _flowerLookup,
+                    hiveLookup = _hiveLookup,
+                    ecb = ecb,
+                    flowerManager = flowerManager
+                }.Schedule(state.Dependency);
+
+                atFlowerJob.Complete();
+            } break;
+
+            case ExecutionMode.ScheduledParallel:
+            {
+                var atFlowerJob = new BeeAtFlowerJob
+                {
+                    time = SystemAPI.Time.ElapsedTime,
+                    deltaTime = SystemAPI.Time.DeltaTime,
+                    flowerLookup = _flowerLookup,
+                    hiveLookup = _hiveLookup,
+                    ecb = ecb,
+                    flowerManager = flowerManager
+                }.ScheduleParallel(state.Dependency);
+
+                atFlowerJob.Complete();
+            } break;
+        }
     }
 
     [BurstCompile]
