@@ -2,5 +2,6 @@
   "numBees": 50,
   "numHives": 2,
   "numFlowers": 100,
-  "worldSize": 50
+  "worldSize": 50,
+  "executionMode": 2
 }

@@ -51,4 +51,13 @@ public struct SimulationConfigValues
     public int numHives;
     public int numFlowers;
     public int worldSize;
+    public ExecutionMode executionMode;
+}
+
+[System.Serializable]
+public enum ExecutionMode
+{
+    MainThread = 1,
+    Scheduled = 2,
+    ScheduledParallel = 3
 }
