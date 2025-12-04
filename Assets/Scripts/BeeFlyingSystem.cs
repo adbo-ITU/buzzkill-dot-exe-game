@@ -16,31 +16,59 @@ partial struct BeeFlyingSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        
+        state.RequireForUpdate<SimulationConfig>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        var config = SystemAPI.GetSingleton<SimulationConfig>().config;
+
         EntityCommandBuffer.ParallelWriter ecb =
             SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
                 .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
 
         var deltaTime = (float)SystemAPI.Time.DeltaTime;
 
-        var flyToFlowerJob = new BeeToFlowerJob
+        switch (config.executionMode)
         {
-            ecb = ecb,
-            deltaTime = deltaTime,
-        }.Schedule(state.Dependency);
-        
-        var flyToHiveJob = new BeeToHiveJob()
-        {
-            ecb = ecb,
-            deltaTime = deltaTime,
-        }.Schedule(flyToFlowerJob);
+            case ExecutionMode.MainThread: throw new NotImplementedException(); break;
 
-        flyToHiveJob.Complete();
+            case ExecutionMode.Scheduled:
+            {
+                var flyToFlowerJob = new BeeToFlowerJob
+                {
+                    ecb = ecb,
+                    deltaTime = deltaTime,
+                }.Schedule(state.Dependency);
+        
+                var flyToHiveJob = new BeeToHiveJob()
+                {
+                    ecb = ecb,
+                    deltaTime = deltaTime,
+                }.Schedule(flyToFlowerJob);
+
+                flyToHiveJob.Complete();
+            } break;
+
+            case ExecutionMode.ScheduledParallel:
+            {
+                var flyToFlowerJob = new BeeToFlowerJob
+                {
+                    ecb = ecb,
+                    deltaTime = deltaTime,
+                }.ScheduleParallel(state.Dependency);
+
+                var flyToHiveJob = new BeeToHiveJob()
+                {
+                    ecb = ecb,
+                    deltaTime = deltaTime,
+                }.ScheduleParallel(flyToFlowerJob);
+
+                flyToHiveJob.Complete();
+            } break;
+        }
+
     }
 
     [BurstCompile]
