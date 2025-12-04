@@ -88,7 +88,7 @@ public partial struct BeeSpawnJob : IJobEntity
                 new BoxGeometry
                 {
                     Center = float3.zero,
-                    Size = 1f,
+                    Size = 0.5f,
                     Orientation = quaternion.identity,
                 },
                 new CollisionFilter
