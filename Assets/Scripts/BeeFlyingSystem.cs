@@ -181,8 +181,8 @@ public partial struct BeeToFlowerJob : IJobEntity
         
         if (reachedDest)
         {
-            ecb.RemoveComponent<TravellingToFlower>(chunkKey, entity);
-            ecb.AddComponent(chunkKey, entity, new AtFlower());
+            ecb.SetComponentEnabled<TravellingToFlower>(chunkKey, entity, false);
+            ecb.SetComponentEnabled<AtFlower>(chunkKey, entity, true);
         }
     }
 }
@@ -199,8 +199,8 @@ public partial struct BeeToHiveJob : IJobEntity
         
         if (reachedDest)
         {
-            ecb.RemoveComponent<TravellingToHome>(chunkKey, entity);
-            ecb.AddComponent(chunkKey, entity, new AtHive());
+            ecb.SetComponentEnabled<TravellingToHome>(chunkKey, entity, false);
+            ecb.SetComponentEnabled<AtHive>(chunkKey, entity, true);
         }
     }
 }
