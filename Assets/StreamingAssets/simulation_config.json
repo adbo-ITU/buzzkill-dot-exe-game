@@ -3,5 +3,5 @@
   "numHives": 50,
   "numFlowers": 20000,
   "worldSize": 1000,
-  "executionMode": 3
+  "executionMode": 2
 }
