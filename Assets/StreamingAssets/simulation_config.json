@@ -1,7 +1,7 @@
 {
-  "numBees": 2000,
-  "numHives": 5,
-  "numFlowers": 2000,
-  "worldSize": 350,
-  "executionMode": 2
+  "numBees": 20000,
+  "numHives": 50,
+  "numFlowers": 20000,
+  "worldSize": 1000,
+  "executionMode": 1
 }
