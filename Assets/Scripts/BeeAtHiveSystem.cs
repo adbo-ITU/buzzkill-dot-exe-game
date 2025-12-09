@@ -94,12 +94,12 @@ partial struct BeeAtHiveSystem : ISystem
                     var beeIsDepleted = bee.ValueRO.nectarCarried <= 0.01;
                     if (!beeIsDepleted) continue;
 
-                    ecbSingleThread.RemoveComponent<AtHive>(entity);
+                    ecbSingleThread.SetComponentEnabled<AtHive>(entity, false);
 
                     var rng = BeeData.GetRng(time, entity);
                     var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(ref rng);
                     bee.ValueRW.targetFlower = flowerEntity;
-                    ecbSingleThread.AddComponent(entity, new TravellingToFlower());
+                    ecbSingleThread.SetComponentEnabled<TravellingToFlower>(entity, true);
                     ecbSingleThread.AddComponent(entity, new FlightPath()
                     {
                         time = 0,
@@ -144,12 +144,12 @@ public partial struct BeeAtHiveJob : IJobEntity
         var beeIsDepleted = bee.nectarCarried <= 0.01;
         if (!beeIsDepleted) return;
         
-        ecb.RemoveComponent<AtHive>(chunkKey, entity);
+        ecb.SetComponentEnabled<AtHive>(chunkKey, entity, false);
 
         var rng = BeeData.GetRng(time, entity);
         var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(ref rng);
         bee.targetFlower = flowerEntity;
-        ecb.AddComponent(chunkKey, entity, new TravellingToFlower());
+        ecb.SetComponentEnabled<TravellingToFlower>(chunkKey, entity, true);
         ecb.AddComponent(chunkKey, entity, new FlightPath()
         {
             time = 0,

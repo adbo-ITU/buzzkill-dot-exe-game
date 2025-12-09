@@ -126,15 +126,15 @@ partial struct BeeAtFlowerSystem : ISystem
                     var beeIsSaturated = bee.ValueRO.nectarCapacity - bee.ValueRO.nectarCarried <= 0.01;
 
                     if (!flowerIsEmpty && !beeIsSaturated) continue;
-
-                    ecbSingleThread.RemoveComponent<AtFlower>(entity);
+                    
+                    ecbSingleThread.SetComponentEnabled<AtFlower>(entity, false);
                     float3 to;
                     if (beeIsSaturated)
                     {
                         var hive = hiveLookup.GetRefRO(bee.ValueRO.homeHive);
                         bee.ValueRW.targetFlower = Entity.Null;
                         to = hive.ValueRO.position;
-                        ecbSingleThread.AddComponent<TravellingToHome>(entity);
+                        ecbSingleThread.SetComponentEnabled<TravellingToHome>(entity, true);
                     }
                     else
                     {
@@ -142,7 +142,7 @@ partial struct BeeAtFlowerSystem : ISystem
                         var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(ref rng);
                         bee.ValueRW.targetFlower = flowerEntity;
                         to = flowerData.position;
-                        ecbSingleThread.AddComponent<TravellingToFlower>(entity);
+                        ecbSingleThread.SetComponentEnabled<TravellingToFlower>(entity, true);
                     }
 
                     ecbSingleThread.AddComponent(entity, new FlightPath()
@@ -222,14 +222,14 @@ public partial struct BeeAtFlowerJob : IJobEntity
 
         if (!flowerIsEmpty && !beeIsSaturated) return;
 
-        ecb.RemoveComponent<AtFlower>(chunkKey, entity);
+        ecb.SetComponentEnabled<AtFlower>(chunkKey, entity, false);
         float3 to;
         if (beeIsSaturated)
         {
             var hive = hiveLookup.GetRefRO(bee.homeHive);
             bee.targetFlower = Entity.Null;
             to = hive.ValueRO.position;
-            ecb.AddComponent<TravellingToHome>(chunkKey, entity);
+            ecb.SetComponentEnabled<TravellingToHome>(chunkKey, entity, true);
         }
         else
         {
@@ -237,7 +237,7 @@ public partial struct BeeAtFlowerJob : IJobEntity
             var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(ref rng);
             bee.targetFlower = flowerEntity;
             to = flowerData.position;
-            ecb.AddComponent<TravellingToFlower>(chunkKey, entity);
+            ecb.SetComponentEnabled<TravellingToFlower>(chunkKey, entity, true);
         }
 
         ecb.AddComponent(chunkKey, entity, new FlightPath()
