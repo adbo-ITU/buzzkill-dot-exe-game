@@ -372,7 +372,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 08aee7485e8d345a9a7c1a65b9e63d26, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  beePrefab: {fileID: 7738423416188057354, guid: 524dd7cc220ae472cb379b27a455e16d, type: 3}
+  beePrefab: {fileID: 5359763710235875299, guid: f92b0734e08d44a389cf2488d5648b54, type: 3}
 --- !u!4 &2039319760
 Transform:
   m_ObjectHideFlags: 0
