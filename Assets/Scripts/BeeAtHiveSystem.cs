@@ -11,7 +11,7 @@ using Random = Unity.Mathematics.Random;
 [UpdateAfter(typeof(BeeFlyingSystem))] 
 partial struct BeeAtHiveSystem : ISystem
 {
-    private ComponentLookup<HiveData> _hiveLookup;
+    [NativeDisableParallelForRestriction] private ComponentLookup<HiveData> _hiveLookup;
     
     [BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -125,7 +125,7 @@ public partial struct BeeAtHiveJob : IJobEntity
 {
     public double time;
     public float deltaTime;
-    public ComponentLookup<HiveData> hiveLookup;
+    [NativeDisableParallelForRestriction] public ComponentLookup<HiveData> hiveLookup;
     public EntityCommandBuffer.ParallelWriter ecb;
     [ReadOnly] public FlowerManager flowerManager;
 
