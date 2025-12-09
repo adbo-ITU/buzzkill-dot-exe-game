@@ -81,16 +81,8 @@ public partial struct BeeSpawnJob : IJobEntity
                 homeHive = hiveEntity,
                 targetFlower = Entity.Null,
             });
+            ecb.AddComponent(chunkKey, e, new AtHive());
             ecb.AddComponent(chunkKey, e, LocalTransform.FromPosition(spawnPos));
-
-            ecb.AddComponent<TravellingToFlower>(chunkKey, e);
-            ecb.AddComponent<TravellingToHome>(chunkKey, e);
-            ecb.AddComponent<AtFlower>(chunkKey, e);
-            ecb.AddComponent<AtHive>(chunkKey, e);
-            ecb.SetComponentEnabled<TravellingToFlower>(chunkKey, e, false);
-            ecb.SetComponentEnabled<TravellingToHome>(chunkKey, e, false);
-            ecb.SetComponentEnabled<AtFlower>(chunkKey, e, false);
-            ecb.SetComponentEnabled<AtHive>(chunkKey, e, true);
 
             var collider = Unity.Physics.BoxCollider.Create(
                 new BoxGeometry

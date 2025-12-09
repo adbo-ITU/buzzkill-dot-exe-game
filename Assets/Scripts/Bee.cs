@@ -43,10 +43,10 @@ public struct BeeData : IComponentData
     }
 }
 
-public struct TravellingToFlower : IComponentData, IEnableableComponent {}
-public struct TravellingToHome : IComponentData, IEnableableComponent {}
-public struct AtFlower : IComponentData, IEnableableComponent {}
-public struct AtHive : IComponentData, IEnableableComponent {}
+public struct TravellingToFlower : IComponentData {}
+public struct TravellingToHome : IComponentData {}
+public struct AtFlower : IComponentData {}
+public struct AtHive : IComponentData {}
 
 public struct FlightPath : IComponentData
 {

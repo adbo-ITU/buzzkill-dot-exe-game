@@ -222,14 +222,14 @@ public partial struct BeeAtFlowerJob : IJobEntity
 
         if (!flowerIsEmpty && !beeIsSaturated) return;
 
-        ecb.SetComponentEnabled<AtFlower>(chunkKey, entity, false);
+        ecb.RemoveComponent<AtFlower>(chunkKey, entity);
         float3 to;
         if (beeIsSaturated)
         {
             var hive = hiveLookup.GetRefRO(bee.homeHive);
             bee.targetFlower = Entity.Null;
             to = hive.ValueRO.position;
-            ecb.SetComponentEnabled<TravellingToHome>(chunkKey, entity, true);
+            ecb.AddComponent<TravellingToHome>(chunkKey, entity);
         }
         else
         {
@@ -237,7 +237,7 @@ public partial struct BeeAtFlowerJob : IJobEntity
             var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(ref rng);
             bee.targetFlower = flowerEntity;
             to = flowerData.position;
-            ecb.SetComponentEnabled<TravellingToFlower>(chunkKey, entity, true);
+            ecb.AddComponent<TravellingToFlower>(chunkKey, entity);
         }
 
         ecb.AddComponent(chunkKey, entity, new FlightPath()

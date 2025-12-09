@@ -144,12 +144,12 @@ public partial struct BeeAtHiveJob : IJobEntity
         var beeIsDepleted = bee.nectarCarried <= 0.01;
         if (!beeIsDepleted) return;
         
-        ecb.SetComponentEnabled<AtHive>(chunkKey, entity, false);
+        ecb.RemoveComponent<AtHive>(chunkKey, entity);
 
         var rng = BeeData.GetRng(time, entity);
         var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(ref rng);
         bee.targetFlower = flowerEntity;
-        ecb.SetComponentEnabled<TravellingToFlower>(chunkKey, entity, true);
+        ecb.AddComponent(chunkKey, entity, new TravellingToFlower());
         ecb.AddComponent(chunkKey, entity, new FlightPath()
         {
             time = 0,
