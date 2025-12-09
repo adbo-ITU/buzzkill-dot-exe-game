@@ -29,8 +29,6 @@ partial struct FlowerNectarSystem : ISystem
         
         switch (config.executionMode)
         {
-            case ExecutionMode.MainThread: throw new NotImplementedException(); break;
-
             case ExecutionMode.Scheduled:
             {
                 var flowerNectarJob = new FlowerNectarJob
@@ -53,6 +51,20 @@ partial struct FlowerNectarSystem : ISystem
                 }.ScheduleParallel(state.Dependency);
         
                 flowerNectarJob.Complete();
+            } break;
+            
+            case ExecutionMode.MainThread:
+            {
+                var deltaTime = SystemAPI.Time.DeltaTime;
+                var nectarRegenRate = 1.5f;
+                foreach (var flower in SystemAPI.Query<RefRW<FlowerData>>())
+                {
+                    flower.ValueRW.nectarAmount += nectarRegenRate * deltaTime;
+                    if (flower.ValueRO.nectarAmount >= flower.ValueRO.nectarCapacity)
+                    {
+                        flower.ValueRW.nectarAmount = flower.ValueRO.nectarCapacity;
+                    }
+                }
             } break;
         }
     }

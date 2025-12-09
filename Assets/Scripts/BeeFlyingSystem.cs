@@ -32,8 +32,6 @@ partial struct BeeFlyingSystem : ISystem
 
         switch (config.executionMode)
         {
-            case ExecutionMode.MainThread: throw new NotImplementedException(); break;
-
             case ExecutionMode.Scheduled:
             {
                 var flyToFlowerJob = new BeeToFlowerJob
@@ -66,6 +64,47 @@ partial struct BeeFlyingSystem : ISystem
                 }.ScheduleParallel(flyToFlowerJob);
 
                 flyToHiveJob.Complete();
+            } break;
+
+            case ExecutionMode.MainThread:
+            {
+                var ecbSingleThread =
+                    SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+                        .CreateCommandBuffer(state.WorldUnmanaged);
+                
+                foreach (var (trans, bee, flightPath, velocity, mass, entity) in 
+                         SystemAPI.Query<RefRW<LocalTransform>, RefRW<BeeData>, RefRW<FlightPath>, 
+                                 RefRW<PhysicsVelocity>, RefRO<PhysicsMass>>()
+                             .WithAll<TravellingToFlower>()
+                             .WithEntityAccess())
+                {
+                    var reachedDest = BeeFlyingSystem.TravelBee(
+                        ref trans.ValueRW, ref bee.ValueRW, ref flightPath.ValueRW, 
+                        deltaTime, ref velocity.ValueRW, in mass.ValueRO);
+
+                    if (reachedDest)
+                    {
+                        ecbSingleThread.RemoveComponent<TravellingToFlower>(entity);
+                        ecbSingleThread.AddComponent(entity, new AtFlower());
+                    }
+                }
+                
+                foreach (var (trans, bee, flightPath, velocity, mass, entity) in 
+                         SystemAPI.Query<RefRW<LocalTransform>, RefRW<BeeData>, RefRW<FlightPath>, 
+                                 RefRW<PhysicsVelocity>, RefRO<PhysicsMass>>()
+                             .WithAll<TravellingToHome>()
+                             .WithEntityAccess())
+                {
+                    var reachedDest = BeeFlyingSystem.TravelBee(
+                        ref trans.ValueRW, ref bee.ValueRW, ref flightPath.ValueRW, 
+                        deltaTime, ref velocity.ValueRW, in mass.ValueRO);
+
+                    if (reachedDest)
+                    {
+                        ecbSingleThread.RemoveComponent<TravellingToHome>(entity);
+                        ecbSingleThread.AddComponent(entity, new AtHive());
+                    }
+                }
             } break;
         }
 

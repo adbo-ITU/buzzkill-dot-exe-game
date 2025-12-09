@@ -33,11 +33,9 @@ partial struct BeeAtHiveSystem : ISystem
         _hiveLookup.Update(ref state);
         
         var flowerManager = SystemAPI.GetSingleton<FlowerManager>();
-        
+
         switch (config.executionMode)
         {
-            case ExecutionMode.MainThread: throw new NotImplementedException(); break;
-
             case ExecutionMode.Scheduled:
             {
                 var atHiveJob = new BeeAtHiveJob
@@ -50,7 +48,8 @@ partial struct BeeAtHiveSystem : ISystem
                 }.Schedule(state.Dependency);
 
                 atHiveJob.Complete();
-            } break;
+            }
+                break;
 
             case ExecutionMode.ScheduledParallel:
             {
@@ -64,10 +63,54 @@ partial struct BeeAtHiveSystem : ISystem
                 }.ScheduleParallel(state.Dependency);
 
                 atHiveJob.Complete();
-            } break;
+            }
+                break;
+
+            case ExecutionMode.MainThread:
+            {
+                var ecbSingleThread =
+                    SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+                        .CreateCommandBuffer(state.WorldUnmanaged);
+
+                var hiveLookup = SystemAPI.GetComponentLookup<HiveData>(false);
+                var deltaTime = SystemAPI.Time.DeltaTime;
+                var time = SystemAPI.Time.ElapsedTime;
+
+                foreach (var (trans, bee, entity) in
+                         SystemAPI.Query<RefRO<LocalTransform>, RefRW<BeeData>>()
+                             .WithAll<AtHive>()
+                             .WithEntityAccess())
+                {
+                    var hive = bee.ValueRO.homeHive;
+                    if (!hiveLookup.HasComponent(hive)) continue;
+                    var hiveData = hiveLookup[hive];
+
+                    var maxNectarToGive = 5f * deltaTime;
+                    var nectarGiven = math.min(bee.ValueRO.nectarCarried, maxNectarToGive);
+                    bee.ValueRW.nectarCarried -= nectarGiven;
+                    hiveData.nectarAmount += nectarGiven;
+                    hiveLookup[hive] = hiveData;
+
+                    var beeIsDepleted = bee.ValueRO.nectarCarried <= 0.01;
+                    if (!beeIsDepleted) continue;
+
+                    ecbSingleThread.RemoveComponent<AtHive>(entity);
+
+                    var rng = BeeData.GetRng(time, entity);
+                    var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(ref rng);
+                    bee.ValueRW.targetFlower = flowerEntity;
+                    ecbSingleThread.AddComponent(entity, new TravellingToFlower());
+                    ecbSingleThread.AddComponent(entity, new FlightPath()
+                    {
+                        time = 0,
+                        from = trans.ValueRO.Position,
+                        to = flowerData.position,
+                        position = trans.ValueRO.Position
+                    });
+                }
+            }
+                break;
         }
-        
-        
     }
 
     [BurstCompile]

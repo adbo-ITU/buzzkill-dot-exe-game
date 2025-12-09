@@ -42,8 +42,6 @@ partial struct BeeAtFlowerSystem : ISystem
         
         switch (config.executionMode)
         {
-            case ExecutionMode.MainThread: throw new NotImplementedException(); break;
-
             case ExecutionMode.Scheduled:
             {
                 var atFlowerJob = new BeeAtFlowerJob
@@ -72,6 +70,89 @@ partial struct BeeAtFlowerSystem : ISystem
                 }.ScheduleParallel(state.Dependency);
 
                 atFlowerJob.Complete();
+            } break;
+            
+            case ExecutionMode.MainThread: {
+                var ecbSingleThread =
+                    SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+                        .CreateCommandBuffer(state.WorldUnmanaged);
+                
+                var flowerLookup = SystemAPI.GetComponentLookup<FlowerData>(false);
+                var hiveLookup = SystemAPI.GetComponentLookup<HiveData>(true);
+                
+                var deltaTime = SystemAPI.Time.DeltaTime;
+                var time = SystemAPI.Time.ElapsedTime;
+                
+                foreach (var (trans, bee, velocity, mass, entity) in 
+                         SystemAPI.Query<RefRW<LocalTransform>, RefRW<BeeData>, RefRW<PhysicsVelocity>, RefRO<PhysicsMass>>()
+                             .WithAll<AtFlower>()
+                             .WithEntityAccess())
+                {
+                    var targetFlower = bee.ValueRO.targetFlower;
+                    if (targetFlower == Entity.Null) continue;
+
+                    var flower = flowerLookup.GetRefRW(targetFlower);
+
+                    var between = flower.ValueRO.position - trans.ValueRO.Position;
+                    var dist = math.length(between);
+                    
+                    if (dist > 1f)
+                    {
+                        velocity.ValueRW.ApplyImpulse(
+                            mass.ValueRO,
+                            float3.zero,
+                            quaternion.identity,
+                            math.normalizesafe(between) * dist,
+                            trans.ValueRO.Position);
+                    }
+                    else
+                    {
+                        velocity.ValueRW.Linear = float3.zero;
+                    }
+
+                    velocity.ValueRW.Angular = math.float3(2f, 2f, 2f);
+
+                    var maxNectarToTake = 5f * deltaTime;
+                    var nectarBeeCanTake = math.min(maxNectarToTake, bee.ValueRO.nectarCapacity - bee.ValueRO.nectarCarried);
+
+                    if (flower.ValueRO.nectarAmount > 0)
+                    {
+                        var nectarTaken = math.min(flower.ValueRO.nectarAmount, nectarBeeCanTake);
+                        flower.ValueRW.nectarAmount -= nectarTaken;
+                        bee.ValueRW.nectarCarried += nectarTaken;
+                    }
+
+                    var flowerIsEmpty = flower.ValueRO.nectarAmount <= 0.01;
+                    var beeIsSaturated = bee.ValueRO.nectarCapacity - bee.ValueRO.nectarCarried <= 0.01;
+
+                    if (!flowerIsEmpty && !beeIsSaturated) continue;
+
+                    ecbSingleThread.RemoveComponent<AtFlower>(entity);
+                    float3 to;
+                    if (beeIsSaturated)
+                    {
+                        var hive = hiveLookup.GetRefRO(bee.ValueRO.homeHive);
+                        bee.ValueRW.targetFlower = Entity.Null;
+                        to = hive.ValueRO.position;
+                        ecbSingleThread.AddComponent<TravellingToHome>(entity);
+                    }
+                    else
+                    {
+                        var rng = BeeData.GetRng(time, entity);
+                        var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(ref rng);
+                        bee.ValueRW.targetFlower = flowerEntity;
+                        to = flowerData.position;
+                        ecbSingleThread.AddComponent<TravellingToFlower>(entity);
+                    }
+
+                    ecbSingleThread.AddComponent(entity, new FlightPath()
+                    {
+                        time = 0,
+                        from = trans.ValueRO.Position,
+                        to = to,
+                        position = trans.ValueRO.Position
+                    });
+                }
             } break;
         }
     }
