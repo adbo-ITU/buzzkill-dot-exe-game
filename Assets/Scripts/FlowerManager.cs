@@ -17,4 +17,19 @@ public struct FlowerManager : IComponentData
         var index = rng.NextInt(0, flowerEntities.Length);
         return (flowerEntities[index], flowerData[index]);
     }
+    
+    [BurstCompile]
+    public static float2 GetRandomPointInCircle(ref Random rng, float radius)
+    {
+        float2 point;
+        do
+        {
+            point = new float2(
+                rng.NextFloat(-radius, radius),
+                rng.NextFloat(-radius, radius)
+            );
+        } while (math.lengthsq(point) > radius * radius);
+    
+        return point;
+    }
 }

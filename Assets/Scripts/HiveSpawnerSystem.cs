@@ -39,10 +39,9 @@ public partial struct HiveSpawnerSystem : ISystem
         for (int i = 0; i < config.numHives; i++)
         {
             const float hiveHeight = 5f;
-            
-            float x = rnd.NextFloat(0f, config.worldSize);
-            float z = rnd.NextFloat(0f, config.worldSize);
-            float3 pos = new float3(x, 0, z); 
+
+            var xz = FlowerManager.GetRandomPointInCircle(ref rnd, config.worldSize/2f) + config.worldSize/2f * math.float2(1, 1);
+            float3 pos = new float3(xz.x, 0, xz.y); 
 
             var e =  em.Instantiate(prefab);
 
