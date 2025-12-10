@@ -1,22 +1,30 @@
-using System;
-using System.Numerics;
 using Unity.Burst;
+using Unity.Burst.Intrinsics;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Physics;
-using Unity.Physics.Extensions;
 using Unity.Transforms;
-using UnityEngine;
-using Vector3 = UnityEngine.Vector3;
-
 
 partial struct BeeFlyingSystem : ISystem
 {
+    private EntityQuery _flowerQuery;
+    private EntityQuery _hiveQuery;
+
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<SimulationConfig>();
+
+        _flowerQuery = SystemAPI.QueryBuilder()
+            .WithAll<TravellingToFlower, LocalTransform, BeeData, FlightPath, PhysicsVelocity, PhysicsMass>()
+            .Build();
+
+        _hiveQuery = SystemAPI.QueryBuilder()
+            .WithAll<TravellingToHome, LocalTransform, BeeData, FlightPath, PhysicsVelocity, PhysicsMass>()
+            .Build();
     }
 
     [BurstCompile]
@@ -34,20 +42,61 @@ partial struct BeeFlyingSystem : ISystem
         {
             case ExecutionMode.Scheduled:
             {
-                // Chain jobs sequentially (required by safety system), but don't block main thread
-                var flyToFlowerJob = new BeeToFlowerJob { ecb = ecb, deltaTime = deltaTime }
-                    .Schedule(state.Dependency);
-                state.Dependency = new BeeToHiveJob { ecb = ecb, deltaTime = deltaTime }
-                    .Schedule(flyToFlowerJob);
+                var flyToFlowerJob = new BeeToFlowerChunkJob
+                {
+                    ecb = ecb,
+                    deltaTime = deltaTime,
+                    TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
+                    BeeDataHandle = SystemAPI.GetComponentTypeHandle<BeeData>(),
+                    FlightPathHandle = SystemAPI.GetComponentTypeHandle<FlightPath>(),
+                    VelocityHandle = SystemAPI.GetComponentTypeHandle<PhysicsVelocity>(),
+                    MassHandle = SystemAPI.GetComponentTypeHandle<PhysicsMass>(true),
+                    EntityHandle = SystemAPI.GetEntityTypeHandle()
+                }.Schedule(_flowerQuery, state.Dependency);
+
+                var flyToHiveJob = new BeeToHiveChunkJob
+                {
+                    ecb = ecb,
+                    deltaTime = deltaTime,
+                    TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
+                    BeeDataHandle = SystemAPI.GetComponentTypeHandle<BeeData>(),
+                    FlightPathHandle = SystemAPI.GetComponentTypeHandle<FlightPath>(),
+                    VelocityHandle = SystemAPI.GetComponentTypeHandle<PhysicsVelocity>(),
+                    MassHandle = SystemAPI.GetComponentTypeHandle<PhysicsMass>(true),
+                    EntityHandle = SystemAPI.GetEntityTypeHandle()
+                }.Schedule(_hiveQuery, state.Dependency);
+
+                state.Dependency = JobHandle.CombineDependencies(flyToFlowerJob, flyToHiveJob);
             } break;
 
             case ExecutionMode.ScheduledParallel:
             {
-                // Chain jobs sequentially (required by safety system), but don't block main thread
-                var flyToFlowerJob = new BeeToFlowerJob { ecb = ecb, deltaTime = deltaTime }
-                    .ScheduleParallel(state.Dependency);
-                state.Dependency = new BeeToHiveJob { ecb = ecb, deltaTime = deltaTime }
-                    .ScheduleParallel(flyToFlowerJob);
+                // Both jobs can run in parallel - disjoint entity sets, safety disabled via attributes
+                var flyToFlowerJob = new BeeToFlowerChunkJob
+                {
+                    ecb = ecb,
+                    deltaTime = deltaTime,
+                    TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
+                    BeeDataHandle = SystemAPI.GetComponentTypeHandle<BeeData>(),
+                    FlightPathHandle = SystemAPI.GetComponentTypeHandle<FlightPath>(),
+                    VelocityHandle = SystemAPI.GetComponentTypeHandle<PhysicsVelocity>(),
+                    MassHandle = SystemAPI.GetComponentTypeHandle<PhysicsMass>(true),
+                    EntityHandle = SystemAPI.GetEntityTypeHandle()
+                }.ScheduleParallel(_flowerQuery, state.Dependency);
+
+                var flyToHiveJob = new BeeToHiveChunkJob
+                {
+                    ecb = ecb,
+                    deltaTime = deltaTime,
+                    TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
+                    BeeDataHandle = SystemAPI.GetComponentTypeHandle<BeeData>(),
+                    FlightPathHandle = SystemAPI.GetComponentTypeHandle<FlightPath>(),
+                    VelocityHandle = SystemAPI.GetComponentTypeHandle<PhysicsVelocity>(),
+                    MassHandle = SystemAPI.GetComponentTypeHandle<PhysicsMass>(true),
+                    EntityHandle = SystemAPI.GetEntityTypeHandle()
+                }.ScheduleParallel(_hiveQuery, state.Dependency);
+
+                state.Dependency = JobHandle.CombineDependencies(flyToFlowerJob, flyToHiveJob);
             } break;
 
             case ExecutionMode.MainThread:
@@ -83,15 +132,13 @@ partial struct BeeFlyingSystem : ISystem
                 }
             } break;
         }
-
     }
 
     [BurstCompile]
     public void OnDestroy(ref SystemState state)
     {
-        
     }
-    
+
     [BurstCompile]
     public static bool TravelBee(ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, float deltaTime, ref PhysicsVelocity velocity, in PhysicsMass mass)
     {
@@ -121,10 +168,10 @@ partial struct BeeFlyingSystem : ISystem
 
             velocity.Linear += math.up() * verticalWiggle + orthogonal * horizontalWiggle;
         }
-        
+
         var desiredVel = straightVel;
         var lerpFactor = math.saturate(deltaTime * 1.5f);
-        
+
         if (math.distancesq(flightPath.from, trans.Position) < math.distancesq(flightPath.to, trans.Position))
         {
             desiredVel += math.up() * math.min(100f, 10f / math.distance(flightPath.from, trans.Position));
@@ -134,7 +181,6 @@ partial struct BeeFlyingSystem : ISystem
         velocity.Linear = math.lerp(velocity.Linear, desiredVel, lerpFactor);
 
         // Make the bee face its movement direction
-        // Reuse 'direction' we already computed instead of normalizing desiredVel again
         var targetRotation = quaternion.LookRotationSafe(direction, math.up());
         trans.Rotation = math.slerp(trans.Rotation, targetRotation, lerpFactor * 6.67f);
 
@@ -143,37 +189,103 @@ partial struct BeeFlyingSystem : ISystem
 }
 
 [BurstCompile]
-public partial struct BeeToFlowerJob : IJobEntity
+public struct BeeToFlowerChunkJob : IJobChunk
 {
     public EntityCommandBuffer.ParallelWriter ecb;
     public float deltaTime;
 
-    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee,
-        ref FlightPath flightPath, in TravellingToFlower _, ref PhysicsVelocity velocity, in PhysicsMass mass)
+    [NativeDisableContainerSafetyRestriction]
+    public ComponentTypeHandle<LocalTransform> TransformHandle;
+    [NativeDisableContainerSafetyRestriction]
+    public ComponentTypeHandle<BeeData> BeeDataHandle;
+    [NativeDisableContainerSafetyRestriction]
+    public ComponentTypeHandle<FlightPath> FlightPathHandle;
+    [NativeDisableContainerSafetyRestriction]
+    public ComponentTypeHandle<PhysicsVelocity> VelocityHandle;
+    [ReadOnly] public ComponentTypeHandle<PhysicsMass> MassHandle;
+    public EntityTypeHandle EntityHandle;
+
+    public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
     {
-        var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime, ref velocity, in mass);
-        if (reachedDest)
+        var transforms = chunk.GetNativeArray(ref TransformHandle);
+        var bees = chunk.GetNativeArray(ref BeeDataHandle);
+        var flightPaths = chunk.GetNativeArray(ref FlightPathHandle);
+        var velocities = chunk.GetNativeArray(ref VelocityHandle);
+        var masses = chunk.GetNativeArray(ref MassHandle);
+        var entities = chunk.GetNativeArray(EntityHandle);
+
+        var enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
+        while (enumerator.NextEntityIndex(out int i))
         {
-            ecb.SetComponentEnabled<TravellingToFlower>(chunkKey, entity, false);
-            ecb.SetComponentEnabled<AtFlower>(chunkKey, entity, true);
+            var trans = transforms[i];
+            var bee = bees[i];
+            var flightPath = flightPaths[i];
+            var velocity = velocities[i];
+            var mass = masses[i];
+
+            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime, ref velocity, in mass);
+
+            transforms[i] = trans;
+            bees[i] = bee;
+            flightPaths[i] = flightPath;
+            velocities[i] = velocity;
+
+            if (reachedDest)
+            {
+                ecb.SetComponentEnabled<TravellingToFlower>(unfilteredChunkIndex, entities[i], false);
+                ecb.SetComponentEnabled<AtFlower>(unfilteredChunkIndex, entities[i], true);
+            }
         }
     }
 }
 
 [BurstCompile]
-public partial struct BeeToHiveJob : IJobEntity
+public struct BeeToHiveChunkJob : IJobChunk
 {
     public EntityCommandBuffer.ParallelWriter ecb;
     public float deltaTime;
 
-    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee,
-        ref FlightPath flightPath, in TravellingToHome _, ref PhysicsVelocity velocity, in PhysicsMass mass)
+    [NativeDisableContainerSafetyRestriction]
+    public ComponentTypeHandle<LocalTransform> TransformHandle;
+    [NativeDisableContainerSafetyRestriction]
+    public ComponentTypeHandle<BeeData> BeeDataHandle;
+    [NativeDisableContainerSafetyRestriction]
+    public ComponentTypeHandle<FlightPath> FlightPathHandle;
+    [NativeDisableContainerSafetyRestriction]
+    public ComponentTypeHandle<PhysicsVelocity> VelocityHandle;
+    [ReadOnly] public ComponentTypeHandle<PhysicsMass> MassHandle;
+    public EntityTypeHandle EntityHandle;
+
+    public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
     {
-        var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime, ref velocity, in mass);
-        if (reachedDest)
+        var transforms = chunk.GetNativeArray(ref TransformHandle);
+        var bees = chunk.GetNativeArray(ref BeeDataHandle);
+        var flightPaths = chunk.GetNativeArray(ref FlightPathHandle);
+        var velocities = chunk.GetNativeArray(ref VelocityHandle);
+        var masses = chunk.GetNativeArray(ref MassHandle);
+        var entities = chunk.GetNativeArray(EntityHandle);
+
+        var enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
+        while (enumerator.NextEntityIndex(out int i))
         {
-            ecb.SetComponentEnabled<TravellingToHome>(chunkKey, entity, false);
-            ecb.SetComponentEnabled<AtHive>(chunkKey, entity, true);
+            var trans = transforms[i];
+            var bee = bees[i];
+            var flightPath = flightPaths[i];
+            var velocity = velocities[i];
+            var mass = masses[i];
+
+            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime, ref velocity, in mass);
+
+            transforms[i] = trans;
+            bees[i] = bee;
+            flightPaths[i] = flightPath;
+            velocities[i] = velocity;
+
+            if (reachedDest)
+            {
+                ecb.SetComponentEnabled<TravellingToHome>(unfilteredChunkIndex, entities[i], false);
+                ecb.SetComponentEnabled<AtHive>(unfilteredChunkIndex, entities[i], true);
+            }
         }
     }
 }
