@@ -188,9 +188,10 @@ partial struct BeeFlyingSystem : ISystem
         velocity.Angular = float3.zero;
         velocity.Linear = math.lerp(velocity.Linear, desiredVel, lerpFactor);
 
-        // Make the bee face its movement direction
+        // Make the bee face its movement direction (nlerp is much faster than slerp, visually similar for small angles)
         var targetRotation = quaternion.LookRotationSafe(direction, math.up());
-        trans.Rotation = math.slerp(trans.Rotation, targetRotation, lerpFactor * 6.67f);
+        var t = lerpFactor * 6.67f;
+        trans.Rotation = math.normalize(new quaternion(math.lerp(trans.Rotation.value, targetRotation.value, t)));
 
         return false;
     }
