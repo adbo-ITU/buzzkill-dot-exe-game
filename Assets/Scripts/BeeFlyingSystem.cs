@@ -71,38 +71,30 @@ partial struct BeeFlyingSystem : ISystem
                 var ecbSingleThread =
                     SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
                         .CreateCommandBuffer(state.WorldUnmanaged);
-                
-                foreach (var (trans, bee, flightPath, velocity, mass, entity) in 
-                         SystemAPI.Query<RefRW<LocalTransform>, RefRW<BeeData>, RefRW<FlightPath>, 
-                                 RefRW<PhysicsVelocity>, RefRO<PhysicsMass>>()
-                             .WithAll<TravellingToFlower>()
+
+                // Single consolidated loop for all travelling bees (better cache utilization)
+                foreach (var (trans, bee, flightPath, velocity, mass, travelToFlower, entity) in
+                         SystemAPI.Query<RefRW<LocalTransform>, RefRW<BeeData>, RefRW<FlightPath>,
+                                 RefRW<PhysicsVelocity>, RefRO<PhysicsMass>, EnabledRefRO<TravellingToFlower>>()
+                             .WithAny<TravellingToFlower, TravellingToHome>()
                              .WithEntityAccess())
                 {
                     var reachedDest = BeeFlyingSystem.TravelBee(
-                        ref trans.ValueRW, ref bee.ValueRW, ref flightPath.ValueRW, 
+                        ref trans.ValueRW, ref bee.ValueRW, ref flightPath.ValueRW,
                         deltaTime, ref velocity.ValueRW, in mass.ValueRO);
 
                     if (reachedDest)
                     {
-                        ecbSingleThread.SetComponentEnabled<TravellingToFlower>(entity, false);
-                        ecbSingleThread.SetComponentEnabled<AtFlower>(entity, true);
-                    }
-                }
-                
-                foreach (var (trans, bee, flightPath, velocity, mass, entity) in 
-                         SystemAPI.Query<RefRW<LocalTransform>, RefRW<BeeData>, RefRW<FlightPath>, 
-                                 RefRW<PhysicsVelocity>, RefRO<PhysicsMass>>()
-                             .WithAll<TravellingToHome>()
-                             .WithEntityAccess())
-                {
-                    var reachedDest = BeeFlyingSystem.TravelBee(
-                        ref trans.ValueRW, ref bee.ValueRW, ref flightPath.ValueRW, 
-                        deltaTime, ref velocity.ValueRW, in mass.ValueRO);
-
-                    if (reachedDest)
-                    {
-                        ecbSingleThread.SetComponentEnabled<TravellingToHome>(entity, false);
-                        ecbSingleThread.SetComponentEnabled<AtHive>(entity, true);
+                        if (travelToFlower.ValueRO)
+                        {
+                            ecbSingleThread.SetComponentEnabled<TravellingToFlower>(entity, false);
+                            ecbSingleThread.SetComponentEnabled<AtFlower>(entity, true);
+                        }
+                        else
+                        {
+                            ecbSingleThread.SetComponentEnabled<TravellingToHome>(entity, false);
+                            ecbSingleThread.SetComponentEnabled<AtHive>(entity, true);
+                        }
                     }
                 }
             } break;
