@@ -38,7 +38,7 @@ partial struct FlowerNectarSystem : ISystem
                     nectarRegenRate = 1.5f,
                 }.Schedule(state.Dependency);
         
-                state.Dependency = flowerNectarJob;
+                flowerNectarJob.Complete();
             } break;
 
             case ExecutionMode.ScheduledParallel:
@@ -50,7 +50,7 @@ partial struct FlowerNectarSystem : ISystem
                     nectarRegenRate = 1.5f,
                 }.ScheduleParallel(state.Dependency);
         
-                state.Dependency = flowerNectarJob;
+                flowerNectarJob.Complete();
             } break;
             
             case ExecutionMode.MainThread:

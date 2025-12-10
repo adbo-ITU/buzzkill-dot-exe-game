@@ -68,7 +68,7 @@ partial struct BeeFlyingSystem : ISystem
                     EntityHandle = SystemAPI.GetEntityTypeHandle()
                 }.Schedule(_hiveQuery, state.Dependency);
 
-                state.Dependency = JobHandle.CombineDependencies(flyToFlowerJob, flyToHiveJob);
+                JobHandle.CombineDependencies(flyToFlowerJob, flyToHiveJob).Complete();
             } break;
 
             case ExecutionMode.ScheduledParallel:
@@ -101,7 +101,7 @@ partial struct BeeFlyingSystem : ISystem
                     EntityHandle = SystemAPI.GetEntityTypeHandle()
                 }.ScheduleParallel(_hiveQuery, state.Dependency);
 
-                state.Dependency = JobHandle.CombineDependencies(flyToFlowerJob, flyToHiveJob);
+                JobHandle.CombineDependencies(flyToFlowerJob, flyToHiveJob).Complete();
             } break;
 
             case ExecutionMode.MainThread:
