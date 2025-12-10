@@ -19,11 +19,11 @@ partial struct BeeFlyingSystem : ISystem
         state.RequireForUpdate<SimulationConfig>();
 
         _flowerQuery = SystemAPI.QueryBuilder()
-            .WithAll<TravellingToFlower, LocalTransform, BeeData, FlightPath, PhysicsVelocity>()
+            .WithAll<TravellingToFlower, LocalTransform, BeeSpeed, FlightPath, PhysicsVelocity>()
             .Build();
 
         _hiveQuery = SystemAPI.QueryBuilder()
-            .WithAll<TravellingToHome, LocalTransform, BeeData, FlightPath, PhysicsVelocity>()
+            .WithAll<TravellingToHome, LocalTransform, BeeSpeed, FlightPath, PhysicsVelocity>()
             .Build();
     }
 
@@ -49,7 +49,7 @@ partial struct BeeFlyingSystem : ISystem
                     ecb = ecb1,
                     deltaTime = deltaTime,
                     TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
-                    BeeDataHandle = SystemAPI.GetComponentTypeHandle<BeeData>(),
+                    BeeSpeedHandle = SystemAPI.GetComponentTypeHandle<BeeSpeed>(true),
                     FlightPathHandle = SystemAPI.GetComponentTypeHandle<FlightPath>(),
                     VelocityHandle = SystemAPI.GetComponentTypeHandle<PhysicsVelocity>(),
                     EntityHandle = SystemAPI.GetEntityTypeHandle()
@@ -60,7 +60,7 @@ partial struct BeeFlyingSystem : ISystem
                     ecb = ecb2,
                     deltaTime = deltaTime,
                     TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
-                    BeeDataHandle = SystemAPI.GetComponentTypeHandle<BeeData>(),
+                    BeeSpeedHandle = SystemAPI.GetComponentTypeHandle<BeeSpeed>(true),
                     FlightPathHandle = SystemAPI.GetComponentTypeHandle<FlightPath>(),
                     VelocityHandle = SystemAPI.GetComponentTypeHandle<PhysicsVelocity>(),
                     EntityHandle = SystemAPI.GetEntityTypeHandle()
@@ -80,7 +80,7 @@ partial struct BeeFlyingSystem : ISystem
                     ecb = ecb1,
                     deltaTime = deltaTime,
                     TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
-                    BeeDataHandle = SystemAPI.GetComponentTypeHandle<BeeData>(),
+                    BeeSpeedHandle = SystemAPI.GetComponentTypeHandle<BeeSpeed>(true),
                     FlightPathHandle = SystemAPI.GetComponentTypeHandle<FlightPath>(),
                     VelocityHandle = SystemAPI.GetComponentTypeHandle<PhysicsVelocity>(),
                     EntityHandle = SystemAPI.GetEntityTypeHandle()
@@ -91,7 +91,7 @@ partial struct BeeFlyingSystem : ISystem
                     ecb = ecb2,
                     deltaTime = deltaTime,
                     TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
-                    BeeDataHandle = SystemAPI.GetComponentTypeHandle<BeeData>(),
+                    BeeSpeedHandle = SystemAPI.GetComponentTypeHandle<BeeSpeed>(true),
                     FlightPathHandle = SystemAPI.GetComponentTypeHandle<FlightPath>(),
                     VelocityHandle = SystemAPI.GetComponentTypeHandle<PhysicsVelocity>(),
                     EntityHandle = SystemAPI.GetEntityTypeHandle()
@@ -107,14 +107,14 @@ partial struct BeeFlyingSystem : ISystem
                         .CreateCommandBuffer(state.WorldUnmanaged);
 
                 // Single consolidated loop for all travelling bees (better cache utilization)
-                foreach (var (trans, bee, flightPath, velocity, travelToFlower, entity) in
-                         SystemAPI.Query<RefRW<LocalTransform>, RefRW<BeeData>, RefRW<FlightPath>,
+                foreach (var (trans, beeSpeed, flightPath, velocity, travelToFlower, entity) in
+                         SystemAPI.Query<RefRW<LocalTransform>, RefRO<BeeSpeed>, RefRW<FlightPath>,
                                  RefRW<PhysicsVelocity>, EnabledRefRO<TravellingToFlower>>()
                              .WithAny<TravellingToFlower, TravellingToHome>()
                              .WithEntityAccess())
                 {
                     var reachedDest = BeeFlyingSystem.TravelBee(
-                        ref trans.ValueRW, in bee.ValueRO, ref flightPath.ValueRW,
+                        ref trans.ValueRW, beeSpeed.ValueRO.value, ref flightPath.ValueRW,
                         deltaTime, ref velocity.ValueRW);
 
                     if (reachedDest)
@@ -144,7 +144,7 @@ partial struct BeeFlyingSystem : ISystem
     private const float BeeInverseMass = 0.2f;
 
     [BurstCompile]
-    public static bool TravelBee(ref LocalTransform trans, in BeeData bee, ref FlightPath flightPath, float deltaTime, ref PhysicsVelocity velocity)
+    public static bool TravelBee(ref LocalTransform trans, float speed, ref FlightPath flightPath, float deltaTime, ref PhysicsVelocity velocity)
     {
         var between = flightPath.to - trans.Position;
         var distanceSq = math.lengthsq(between);
@@ -160,7 +160,7 @@ partial struct BeeFlyingSystem : ISystem
         var invDistance = math.rsqrt(distanceSq);
         var distance = distanceSq * invDistance;  // distanceSq / sqrt(distanceSq) = sqrt(distanceSq)
         var direction = between * invDistance;
-        var straightVel = direction * bee.speed * 5f;
+        var straightVel = direction * speed * 5f;
 
         // Only compute wiggle when distance >= 2f (skip expensive sin/cos/normalize when near destination)
         if (distance >= 2f)
@@ -210,8 +210,8 @@ public struct BeeToFlowerChunkJob : IJobChunk
 
     [NativeDisableContainerSafetyRestriction]
     public ComponentTypeHandle<LocalTransform> TransformHandle;
-    [NativeDisableContainerSafetyRestriction]
-    public ComponentTypeHandle<BeeData> BeeDataHandle;
+    [ReadOnly, NativeDisableContainerSafetyRestriction]
+    public ComponentTypeHandle<BeeSpeed> BeeSpeedHandle;
     [NativeDisableContainerSafetyRestriction]
     public ComponentTypeHandle<FlightPath> FlightPathHandle;
     [NativeDisableContainerSafetyRestriction]
@@ -222,7 +222,7 @@ public struct BeeToFlowerChunkJob : IJobChunk
     public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
     {
         var transforms = chunk.GetNativeArray(ref TransformHandle);
-        var bees = chunk.GetNativeArray(ref BeeDataHandle);
+        var beeSpeeds = chunk.GetNativeArray(ref BeeSpeedHandle);
         var flightPaths = chunk.GetNativeArray(ref FlightPathHandle);
         var velocities = chunk.GetNativeArray(ref VelocityHandle);
         var entities = chunk.GetNativeArray(EntityHandle);
@@ -231,11 +231,11 @@ public struct BeeToFlowerChunkJob : IJobChunk
         while (enumerator.NextEntityIndex(out int i))
         {
             var trans = transforms[i];
-            var bee = bees[i];
+            var speed = beeSpeeds[i].value;
             var flightPath = flightPaths[i];
             var velocity = velocities[i];
 
-            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, in bee, ref flightPath, deltaTime, ref velocity);
+            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, speed, ref flightPath, deltaTime, ref velocity);
 
             transforms[i] = trans;
             flightPaths[i] = flightPath;
@@ -258,8 +258,8 @@ public struct BeeToHiveChunkJob : IJobChunk
 
     [NativeDisableContainerSafetyRestriction]
     public ComponentTypeHandle<LocalTransform> TransformHandle;
-    [NativeDisableContainerSafetyRestriction]
-    public ComponentTypeHandle<BeeData> BeeDataHandle;
+    [ReadOnly, NativeDisableContainerSafetyRestriction]
+    public ComponentTypeHandle<BeeSpeed> BeeSpeedHandle;
     [NativeDisableContainerSafetyRestriction]
     public ComponentTypeHandle<FlightPath> FlightPathHandle;
     [NativeDisableContainerSafetyRestriction]
@@ -270,7 +270,7 @@ public struct BeeToHiveChunkJob : IJobChunk
     public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
     {
         var transforms = chunk.GetNativeArray(ref TransformHandle);
-        var bees = chunk.GetNativeArray(ref BeeDataHandle);
+        var beeSpeeds = chunk.GetNativeArray(ref BeeSpeedHandle);
         var flightPaths = chunk.GetNativeArray(ref FlightPathHandle);
         var velocities = chunk.GetNativeArray(ref VelocityHandle);
         var entities = chunk.GetNativeArray(EntityHandle);
@@ -279,11 +279,11 @@ public struct BeeToHiveChunkJob : IJobChunk
         while (enumerator.NextEntityIndex(out int i))
         {
             var trans = transforms[i];
-            var bee = bees[i];
+            var speed = beeSpeeds[i].value;
             var flightPath = flightPaths[i];
             var velocity = velocities[i];
 
-            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, in bee, ref flightPath, deltaTime, ref velocity);
+            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, speed, ref flightPath, deltaTime, ref velocity);
 
             transforms[i] = trans;
             flightPaths[i] = flightPath;

@@ -17,9 +17,9 @@ class BeeBaker : Baker<Bee>
     public override void Bake(Bee authoring)
     {
         var entity = GetEntity(TransformUsageFlags.Dynamic);
+        AddComponent(entity, new BeeSpeed { value = authoring.speed });
         AddComponent(entity, new BeeData
         {
-            speed = authoring.speed,
             nectarCapacity = authoring.nectarCapacity,
             nectarCarried = authoring.nectarCarried,
             targetFlower = Entity.Null,
@@ -29,9 +29,15 @@ class BeeBaker : Baker<Bee>
     }
 }
 
+// Hot path component - only 4 bytes, used by BeeFlyingSystem (cache-friendly)
+public struct BeeSpeed : IComponentData
+{
+    public float value;
+}
+
+// Cold path component - used by BeeAtFlower, BeeAtHive systems
 public struct BeeData : IComponentData
 {
-    public float speed;
     public Entity targetFlower;
     public float nectarCapacity;
     public float nectarCarried;
