@@ -131,11 +131,11 @@ partial struct BeeFlyingSystem : ISystem
         if (distance >= 2f)
         {
             var orthogonal = math.normalize(math.cross(direction, math.up()));
-            var verticalWiggle = math.sin(flightPath.time * 7f) * math.up() / 5f;
-            var horizontalWiggle = orthogonal * math.cos(flightPath.time * 15f) / 2f;
-            var wiggle = verticalWiggle + horizontalWiggle;
+            var wiggleFactor = deltaTime * mass.InverseMass;
+            var verticalWiggle = math.sin(flightPath.time * 7f) * 50f * wiggleFactor;
+            var horizontalWiggle = math.cos(flightPath.time * 15f) * 125f * wiggleFactor;
 
-            velocity.Linear += wiggle * deltaTime * 250f * mass.InverseMass;
+            velocity.Linear += math.up() * verticalWiggle + orthogonal * horizontalWiggle;
         }
         
         var desiredVel = straightVel;
