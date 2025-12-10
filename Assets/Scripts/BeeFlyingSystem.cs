@@ -34,20 +34,20 @@ partial struct BeeFlyingSystem : ISystem
         {
             case ExecutionMode.Scheduled:
             {
-                new BeeTravelJob
-                {
-                    ecb = ecb,
-                    deltaTime = deltaTime,
-                }.Schedule(state.Dependency).Complete();
+                // Chain jobs sequentially (required by safety system), but don't block main thread
+                var flyToFlowerJob = new BeeToFlowerJob { ecb = ecb, deltaTime = deltaTime }
+                    .Schedule(state.Dependency);
+                state.Dependency = new BeeToHiveJob { ecb = ecb, deltaTime = deltaTime }
+                    .Schedule(flyToFlowerJob);
             } break;
 
             case ExecutionMode.ScheduledParallel:
             {
-                new BeeTravelJob
-                {
-                    ecb = ecb,
-                    deltaTime = deltaTime,
-                }.ScheduleParallel(state.Dependency).Complete();
+                // Chain jobs sequentially (required by safety system), but don't block main thread
+                var flyToFlowerJob = new BeeToFlowerJob { ecb = ecb, deltaTime = deltaTime }
+                    .ScheduleParallel(state.Dependency);
+                state.Dependency = new BeeToHiveJob { ecb = ecb, deltaTime = deltaTime }
+                    .ScheduleParallel(flyToFlowerJob);
             } break;
 
             case ExecutionMode.MainThread:
@@ -143,34 +143,37 @@ partial struct BeeFlyingSystem : ISystem
 }
 
 [BurstCompile]
-[WithOptions(EntityQueryOptions.IgnoreComponentEnabledState)]
-public partial struct BeeTravelJob : IJobEntity
+public partial struct BeeToFlowerJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecb;
     public float deltaTime;
 
     void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee,
-        ref FlightPath flightPath, EnabledRefRO<TravellingToFlower> travelToFlower, EnabledRefRO<TravellingToHome> travelToHome,
-        ref PhysicsVelocity velocity, in PhysicsMass mass)
+        ref FlightPath flightPath, in TravellingToFlower _, ref PhysicsVelocity velocity, in PhysicsMass mass)
     {
-        // Skip if not currently travelling (at flower or at hive)
-        if (!travelToFlower.ValueRO && !travelToHome.ValueRO)
-            return;
-
         var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime, ref velocity, in mass);
-
         if (reachedDest)
         {
-            if (travelToFlower.ValueRO)
-            {
-                ecb.SetComponentEnabled<TravellingToFlower>(chunkKey, entity, false);
-                ecb.SetComponentEnabled<AtFlower>(chunkKey, entity, true);
-            }
-            else
-            {
-                ecb.SetComponentEnabled<TravellingToHome>(chunkKey, entity, false);
-                ecb.SetComponentEnabled<AtHive>(chunkKey, entity, true);
-            }
+            ecb.SetComponentEnabled<TravellingToFlower>(chunkKey, entity, false);
+            ecb.SetComponentEnabled<AtFlower>(chunkKey, entity, true);
+        }
+    }
+}
+
+[BurstCompile]
+public partial struct BeeToHiveJob : IJobEntity
+{
+    public EntityCommandBuffer.ParallelWriter ecb;
+    public float deltaTime;
+
+    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, ref BeeData bee,
+        ref FlightPath flightPath, in TravellingToHome _, ref PhysicsVelocity velocity, in PhysicsMass mass)
+    {
+        var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime, ref velocity, in mass);
+        if (reachedDest)
+        {
+            ecb.SetComponentEnabled<TravellingToHome>(chunkKey, entity, false);
+            ecb.SetComponentEnabled<AtHive>(chunkKey, entity, true);
         }
     }
 }
