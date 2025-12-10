@@ -32,9 +32,7 @@ partial struct BeeFlyingSystem : ISystem
     {
         var config = SystemAPI.GetSingleton<SimulationConfig>().config;
 
-        EntityCommandBuffer.ParallelWriter ecb =
-            SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+        var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
 
         var deltaTime = (float)SystemAPI.Time.DeltaTime;
 
@@ -42,9 +40,13 @@ partial struct BeeFlyingSystem : ISystem
         {
             case ExecutionMode.Scheduled:
             {
+                // Create separate ECBs for each job to allow parallel execution
+                var ecb1 = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+                var ecb2 = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+
                 var flyToFlowerJob = new BeeToFlowerChunkJob
                 {
-                    ecb = ecb,
+                    ecb = ecb1,
                     deltaTime = deltaTime,
                     TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
                     BeeDataHandle = SystemAPI.GetComponentTypeHandle<BeeData>(),
@@ -56,7 +58,7 @@ partial struct BeeFlyingSystem : ISystem
 
                 var flyToHiveJob = new BeeToHiveChunkJob
                 {
-                    ecb = ecb,
+                    ecb = ecb2,
                     deltaTime = deltaTime,
                     TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
                     BeeDataHandle = SystemAPI.GetComponentTypeHandle<BeeData>(),
@@ -71,10 +73,13 @@ partial struct BeeFlyingSystem : ISystem
 
             case ExecutionMode.ScheduledParallel:
             {
-                // Both jobs can run in parallel - disjoint entity sets, safety disabled via attributes
+                // Create separate ECBs for each job to allow parallel execution
+                var ecb1 = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+                var ecb2 = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+
                 var flyToFlowerJob = new BeeToFlowerChunkJob
                 {
-                    ecb = ecb,
+                    ecb = ecb1,
                     deltaTime = deltaTime,
                     TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
                     BeeDataHandle = SystemAPI.GetComponentTypeHandle<BeeData>(),
@@ -86,7 +91,7 @@ partial struct BeeFlyingSystem : ISystem
 
                 var flyToHiveJob = new BeeToHiveChunkJob
                 {
-                    ecb = ecb,
+                    ecb = ecb2,
                     deltaTime = deltaTime,
                     TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
                     BeeDataHandle = SystemAPI.GetComponentTypeHandle<BeeData>(),
@@ -202,7 +207,9 @@ public struct BeeToFlowerChunkJob : IJobChunk
     public ComponentTypeHandle<FlightPath> FlightPathHandle;
     [NativeDisableContainerSafetyRestriction]
     public ComponentTypeHandle<PhysicsVelocity> VelocityHandle;
-    [ReadOnly] public ComponentTypeHandle<PhysicsMass> MassHandle;
+    [ReadOnly, NativeDisableContainerSafetyRestriction]
+    public ComponentTypeHandle<PhysicsMass> MassHandle;
+    [ReadOnly, NativeDisableContainerSafetyRestriction]
     public EntityTypeHandle EntityHandle;
 
     public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
@@ -253,7 +260,9 @@ public struct BeeToHiveChunkJob : IJobChunk
     public ComponentTypeHandle<FlightPath> FlightPathHandle;
     [NativeDisableContainerSafetyRestriction]
     public ComponentTypeHandle<PhysicsVelocity> VelocityHandle;
-    [ReadOnly] public ComponentTypeHandle<PhysicsMass> MassHandle;
+    [ReadOnly, NativeDisableContainerSafetyRestriction]
+    public ComponentTypeHandle<PhysicsMass> MassHandle;
+    [ReadOnly, NativeDisableContainerSafetyRestriction]
     public EntityTypeHandle EntityHandle;
 
     public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
