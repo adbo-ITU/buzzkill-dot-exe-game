@@ -76,8 +76,8 @@ partial struct BeeAtHiveSystem : ISystem
                 var deltaTime = SystemAPI.Time.DeltaTime;
                 var time = SystemAPI.Time.ElapsedTime;
 
-                foreach (var (trans, bee, entity) in
-                         SystemAPI.Query<RefRO<LocalTransform>, RefRW<BeeData>>()
+                foreach (var (trans, bee, flightPath, entity) in
+                         SystemAPI.Query<RefRO<LocalTransform>, RefRW<BeeData>, RefRW<FlightPath>>()
                              .WithAll<AtHive>()
                              .WithEntityAccess())
                 {
@@ -100,12 +100,9 @@ partial struct BeeAtHiveSystem : ISystem
                     var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(ref rng);
                     bee.ValueRW.targetFlower = flowerEntity;
                     ecbSingleThread.SetComponentEnabled<TravellingToFlower>(entity, true);
-                    ecbSingleThread.AddComponent(entity, new FlightPath()
-                    {
-                        time = 0,
-                        from = trans.ValueRO.Position,
-                        to = flowerData.position,
-                    });
+                    flightPath.ValueRW.time = 0;
+                    flightPath.ValueRW.from = trans.ValueRO.Position;
+                    flightPath.ValueRW.to = flowerData.position;
                 }
             }
                 break;
@@ -128,12 +125,12 @@ public partial struct BeeAtHiveJob : IJobEntity
     public EntityCommandBuffer.ParallelWriter ecb;
     [ReadOnly] public FlowerManager flowerManager;
 
-    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, in AtHive atHive, ref BeeData bee)
+    void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, in AtHive atHive, ref BeeData bee, ref FlightPath flightPath)
     {
         var hive = bee.homeHive;
         if (!hiveLookup.HasComponent(hive)) return;
         var hiveData = hiveLookup[hive];
-        
+
         var maxNectarToGive = 5f * deltaTime;
         var nectarGiven = math.min(bee.nectarCarried, maxNectarToGive);
         bee.nectarCarried -= nectarGiven;
@@ -142,18 +139,15 @@ public partial struct BeeAtHiveJob : IJobEntity
 
         var beeIsDepleted = bee.nectarCarried <= 0.01;
         if (!beeIsDepleted) return;
-        
+
         ecb.SetComponentEnabled<AtHive>(chunkKey, entity, false);
 
         var rng = BeeData.GetRng(time, entity);
         var (flowerEntity, flowerData) = flowerManager.GetRandomFlower(ref rng);
         bee.targetFlower = flowerEntity;
         ecb.SetComponentEnabled<TravellingToFlower>(chunkKey, entity, true);
-        ecb.AddComponent(chunkKey, entity, new FlightPath()
-        {
-            time = 0,
-            from = trans.Position,
-            to = flowerData.position,
-        });
+        flightPath.time = 0;
+        flightPath.from = trans.Position;
+        flightPath.to = flowerData.position;
     }
 }

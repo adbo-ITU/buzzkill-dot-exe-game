@@ -83,8 +83,8 @@ partial struct BeeAtFlowerSystem : ISystem
                 var deltaTime = SystemAPI.Time.DeltaTime;
                 var time = SystemAPI.Time.ElapsedTime;
                 
-                foreach (var (trans, bee, velocity, mass, entity) in 
-                         SystemAPI.Query<RefRW<LocalTransform>, RefRW<BeeData>, RefRW<PhysicsVelocity>, RefRO<PhysicsMass>>()
+                foreach (var (trans, bee, velocity, mass, flightPath, entity) in
+                         SystemAPI.Query<RefRW<LocalTransform>, RefRW<BeeData>, RefRW<PhysicsVelocity>, RefRO<PhysicsMass>, RefRW<FlightPath>>()
                              .WithAll<AtFlower>()
                              .WithEntityAccess())
                 {
@@ -95,7 +95,7 @@ partial struct BeeAtFlowerSystem : ISystem
 
                     var between = flower.ValueRO.position - trans.ValueRO.Position;
                     var dist = math.length(between);
-                    
+
                     if (dist > 1f)
                     {
                         velocity.ValueRW.ApplyImpulse(
@@ -126,7 +126,7 @@ partial struct BeeAtFlowerSystem : ISystem
                     var beeIsSaturated = bee.ValueRO.nectarCapacity - bee.ValueRO.nectarCarried <= 0.01;
 
                     if (!flowerIsEmpty && !beeIsSaturated) continue;
-                    
+
                     ecbSingleThread.SetComponentEnabled<AtFlower>(entity, false);
                     float3 to;
                     if (beeIsSaturated)
@@ -145,12 +145,9 @@ partial struct BeeAtFlowerSystem : ISystem
                         ecbSingleThread.SetComponentEnabled<TravellingToFlower>(entity, true);
                     }
 
-                    ecbSingleThread.AddComponent(entity, new FlightPath()
-                    {
-                        time = 0,
-                        from = trans.ValueRO.Position,
-                        to = to,
-                    });
+                    flightPath.ValueRW.time = 0;
+                    flightPath.ValueRW.from = trans.ValueRO.Position;
+                    flightPath.ValueRW.to = to;
                 }
             } break;
         }
@@ -176,12 +173,10 @@ public partial struct BeeAtFlowerJob : IJobEntity
 
     void Execute([ChunkIndexInQuery] int chunkKey, Entity entity, ref LocalTransform trans, in AtFlower atFlower, ref BeeData bee,
         ref PhysicsVelocity velocity,
-        in PhysicsMass mass
+        in PhysicsMass mass,
+        ref FlightPath flightPath
         )
     {
-        // var rot = math.mul(quaternion.RotateZ(2f * deltaTime), quaternion.RotateY(2f * deltaTime));
-        // trans.Rotation = math.mul(trans.Rotation, rot);
-        
         var targetFlower = bee.targetFlower;
         if (targetFlower == Entity.Null) return;
 
@@ -189,7 +184,7 @@ public partial struct BeeAtFlowerJob : IJobEntity
 
         var between = flower.ValueRO.position - trans.Position;
         var dist = math.length(between);
-        
+
         if (dist > 1f)
         {
             velocity.ApplyImpulse(
@@ -239,11 +234,8 @@ public partial struct BeeAtFlowerJob : IJobEntity
             ecb.SetComponentEnabled<TravellingToFlower>(chunkKey, entity, true);
         }
 
-        ecb.AddComponent(chunkKey, entity, new FlightPath()
-        {
-            time = 0,
-            from = trans.Position,
-            to = to,
-        });
+        flightPath.time = 0;
+        flightPath.from = trans.Position;
+        flightPath.to = to;
     }
 }

@@ -73,7 +73,7 @@ public partial struct BeeSpawnJob : IJobEntity
             var spawnPos = hiveData.position + (1 + gap) * math.float3(offsetRow, level, offsetCol);
 
             var e = ecb.Instantiate(chunkKey, spawner.beePrefab);
-            ecb.AddComponent(chunkKey, e, new BeeSpeed { value = rng.NextFloat(4f, 7f) });
+            var beeSpeed = rng.NextFloat(4f, 7f);
             ecb.AddComponent(chunkKey, e, new BeeData
             {
                 nectarCapacity = rng.NextFloat(20f, 40f),
@@ -81,6 +81,7 @@ public partial struct BeeSpawnJob : IJobEntity
                 homeHive = hiveEntity,
                 targetFlower = Entity.Null,
             });
+            ecb.AddComponent(chunkKey, e, new FlightPath { speed = beeSpeed });
             ecb.AddComponent(chunkKey, e, LocalTransform.FromPosition(spawnPos));
 
             ecb.AddComponent<TravellingToFlower>(chunkKey, e);
