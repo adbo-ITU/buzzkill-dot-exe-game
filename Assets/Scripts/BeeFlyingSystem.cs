@@ -142,12 +142,9 @@ partial struct BeeFlyingSystem : ISystem
 
         if (distance >= 2f)
         {
-            velocity.ApplyImpulse(
-                mass,
-                float3.zero,
-                quaternion.identity,
-                wiggle * deltaTime * 250f,
-                trans.Position);
+            // Direct velocity modification instead of ApplyImpulse
+            // ApplyImpulse with zero offset and identity rotation just adds impulse * inverseMass to linear velocity
+            velocity.Linear += wiggle * deltaTime * 250f * mass.InverseMass;
         }
         
         var desiredVel = straightVel;
