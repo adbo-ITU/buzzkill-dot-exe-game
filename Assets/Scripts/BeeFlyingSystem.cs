@@ -135,15 +135,14 @@ partial struct BeeFlyingSystem : ISystem
         var direction = between * invDistance;
         var straightVel = direction * bee.speed * 5f;
 
-        var orthogonal = math.normalize(math.cross(direction, math.up()));
-        var verticalWiggle = math.sin(flightPath.time * 7f) * math.up() / 5f;
-        var horizontalWiggle = orthogonal * math.cos(flightPath.time * 15f) / 2f;
-        var wiggle = (verticalWiggle + horizontalWiggle);
-
+        // Only compute wiggle when distance >= 2f (skip expensive sin/cos/normalize when near destination)
         if (distance >= 2f)
         {
-            // Direct velocity modification instead of ApplyImpulse
-            // ApplyImpulse with zero offset and identity rotation just adds impulse * inverseMass to linear velocity
+            var orthogonal = math.normalize(math.cross(direction, math.up()));
+            var verticalWiggle = math.sin(flightPath.time * 7f) * math.up() / 5f;
+            var horizontalWiggle = orthogonal * math.cos(flightPath.time * 15f) / 2f;
+            var wiggle = verticalWiggle + horizontalWiggle;
+
             velocity.Linear += wiggle * deltaTime * 250f * mass.InverseMass;
         }
         
