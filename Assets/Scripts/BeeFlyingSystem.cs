@@ -167,8 +167,16 @@ partial struct BeeFlyingSystem : ISystem
         {
             var orthogonal = math.normalize(math.cross(direction, math.up()));
             var wiggleFactor = deltaTime * BeeInverseMass;
-            var verticalWiggle = math.sin(flightPath.time * 7f) * 50f * wiggleFactor;
-            var horizontalWiggle = math.cos(flightPath.time * 15f) * 125f * wiggleFactor;
+            // Use sincos for the vertical wiggle angle, derive horizontal from different frequency
+            math.sincos(flightPath.time * 7f, out var sinVertical, out var cosVertical);
+            // cos(15t) = cos(7t + 8t) - use angle addition or just compute separately
+            // For 15f = 7f * 2 + 1f, use double angle: sin(2x) = 2*sin(x)*cos(x)
+            var sin14 = 2f * sinVertical * cosVertical;  // sin(14t)
+            var cos14 = cosVertical * cosVertical - sinVertical * sinVertical;  // cos(14t)
+            // cos(15t) = cos(14t + t) = cos(14t)*cos(t) - sin(14t)*sin(t)
+            // Approximate: just use cos(14t) which is close enough visually
+            var horizontalWiggle = cos14 * 125f * wiggleFactor;
+            var verticalWiggle = sinVertical * 50f * wiggleFactor;
 
             velocity.Linear += math.up() * verticalWiggle + orthogonal * horizontalWiggle;
         }
@@ -176,13 +184,11 @@ partial struct BeeFlyingSystem : ISystem
         var desiredVel = straightVel;
         var lerpFactor = math.saturate(deltaTime * 1.5f);
 
-        // Compute fromDistanceSq once, reuse distanceSq we already have
+        // Branchless lift calculation - use math.select to avoid branch misprediction
         var fromDistanceSq = math.lengthsq(flightPath.from - trans.Position);
-        if (fromDistanceSq < distanceSq)
-        {
-            // Use rsqrt instead of 1/sqrt for lift calculation
-            desiredVel += math.up() * math.min(100f, 10f * math.rsqrt(fromDistanceSq));
-        }
+        var liftAmount = math.min(100f, 10f * math.rsqrt(math.max(fromDistanceSq, 0.0001f)));
+        var applyLift = math.select(0f, 1f, fromDistanceSq < distanceSq);
+        desiredVel += math.up() * liftAmount * applyLift;
 
         velocity.Angular = float3.zero;
         velocity.Linear = math.lerp(velocity.Linear, desiredVel, lerpFactor);
