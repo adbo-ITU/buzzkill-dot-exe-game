@@ -105,7 +105,6 @@ partial struct BeeAtHiveSystem : ISystem
                         time = 0,
                         from = trans.ValueRO.Position,
                         to = flowerData.position,
-                        position = trans.ValueRO.Position
                     });
                 }
             }
@@ -155,7 +154,6 @@ public partial struct BeeAtHiveJob : IJobEntity
             time = 0,
             from = trans.Position,
             to = flowerData.position,
-            position = trans.Position
         });
     }
 }

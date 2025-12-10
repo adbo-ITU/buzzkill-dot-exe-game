@@ -52,6 +52,5 @@ public struct FlightPath : IComponentData
 {
     public float time;
     public float3 from;
-    public float3 position;
     public float3 to;
 }
