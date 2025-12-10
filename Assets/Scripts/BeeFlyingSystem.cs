@@ -120,16 +120,19 @@ partial struct BeeFlyingSystem : ISystem
     public static bool TravelBee(ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, float deltaTime, ref PhysicsVelocity velocity, in PhysicsMass mass)
     {
         var between = flightPath.to - trans.Position;
-        var distance = math.length(between);
+        var distanceSq = math.lengthsq(between);
 
-        if (distance <= 1)
+        if (distanceSq <= 1f)
         {
             return true;
         }
-        
+
         flightPath.time += deltaTime;
 
-        var direction = math.normalize(between);
+        // Single sqrt, then derive direction via multiplication instead of second sqrt
+        var distance = math.sqrt(distanceSq);
+        var invDistance = 1f / distance;
+        var direction = between * invDistance;
         var straightVel = direction * bee.speed * 5f;
 
         var orthogonal = math.normalize(math.cross(direction, math.up()));
