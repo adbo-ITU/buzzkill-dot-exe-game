@@ -47,7 +47,7 @@ partial struct BeeAtHiveSystem : ISystem
                     flowerManager = flowerManager
                 }.Schedule(state.Dependency);
 
-                atHiveJob.Complete();
+                state.Dependency = atHiveJob;
             }
                 break;
 
@@ -62,7 +62,7 @@ partial struct BeeAtHiveSystem : ISystem
                     flowerManager = flowerManager
                 }.ScheduleParallel(state.Dependency);
 
-                atHiveJob.Complete();
+                state.Dependency = atHiveJob;
             }
                 break;
 

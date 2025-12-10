@@ -54,7 +54,7 @@ partial struct BeeAtFlowerSystem : ISystem
                     flowerManager = flowerManager
                 }.Schedule(state.Dependency);
 
-                atFlowerJob.Complete();
+                state.Dependency = atFlowerJob;
             } break;
 
             case ExecutionMode.ScheduledParallel:
@@ -69,7 +69,7 @@ partial struct BeeAtFlowerSystem : ISystem
                     flowerManager = flowerManager
                 }.ScheduleParallel(state.Dependency);
 
-                atFlowerJob.Complete();
+                state.Dependency = atFlowerJob;
             } break;
             
             case ExecutionMode.MainThread: {
