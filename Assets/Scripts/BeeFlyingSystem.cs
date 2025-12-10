@@ -118,7 +118,7 @@ partial struct BeeFlyingSystem : ISystem
                              .WithEntityAccess())
                 {
                     var reachedDest = BeeFlyingSystem.TravelBee(
-                        ref trans.ValueRW, ref bee.ValueRW, ref flightPath.ValueRW,
+                        ref trans.ValueRW, in bee.ValueRO, ref flightPath.ValueRW,
                         deltaTime, ref velocity.ValueRW, in mass.ValueRO);
 
                     if (reachedDest)
@@ -145,7 +145,7 @@ partial struct BeeFlyingSystem : ISystem
     }
 
     [BurstCompile]
-    public static bool TravelBee(ref LocalTransform trans, ref BeeData bee, ref FlightPath flightPath, float deltaTime, ref PhysicsVelocity velocity, in PhysicsMass mass)
+    public static bool TravelBee(ref LocalTransform trans, in BeeData bee, ref FlightPath flightPath, float deltaTime, ref PhysicsVelocity velocity, in PhysicsMass mass)
     {
         var between = flightPath.to - trans.Position;
         var distanceSq = math.lengthsq(between);
@@ -157,9 +157,9 @@ partial struct BeeFlyingSystem : ISystem
 
         flightPath.time += deltaTime;
 
-        // Single sqrt, then derive direction via multiplication instead of second sqrt
-        var distance = math.sqrt(distanceSq);
-        var invDistance = 1f / distance;
+        // Use rsqrt (single instruction) instead of sqrt + division
+        var invDistance = math.rsqrt(distanceSq);
+        var distance = distanceSq * invDistance;  // distanceSq / sqrt(distanceSq) = sqrt(distanceSq)
         var direction = between * invDistance;
         var straightVel = direction * bee.speed * 5f;
 
@@ -177,9 +177,12 @@ partial struct BeeFlyingSystem : ISystem
         var desiredVel = straightVel;
         var lerpFactor = math.saturate(deltaTime * 1.5f);
 
-        if (math.distancesq(flightPath.from, trans.Position) < math.distancesq(flightPath.to, trans.Position))
+        // Compute fromDistanceSq once, reuse distanceSq we already have
+        var fromDistanceSq = math.lengthsq(flightPath.from - trans.Position);
+        if (fromDistanceSq < distanceSq)
         {
-            desiredVel += math.up() * math.min(100f, 10f / math.distance(flightPath.from, trans.Position));
+            // Use rsqrt instead of 1/sqrt for lift calculation
+            desiredVel += math.up() * math.min(100f, 10f * math.rsqrt(fromDistanceSq));
         }
 
         velocity.Angular = float3.zero;
@@ -230,10 +233,9 @@ public struct BeeToFlowerChunkJob : IJobChunk
             var velocity = velocities[i];
             var mass = masses[i];
 
-            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime, ref velocity, in mass);
+            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, in bee, ref flightPath, deltaTime, ref velocity, in mass);
 
             transforms[i] = trans;
-            bees[i] = bee;
             flightPaths[i] = flightPath;
             velocities[i] = velocity;
 
@@ -283,10 +285,9 @@ public struct BeeToHiveChunkJob : IJobChunk
             var velocity = velocities[i];
             var mass = masses[i];
 
-            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref bee, ref flightPath, deltaTime, ref velocity, in mass);
+            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, in bee, ref flightPath, deltaTime, ref velocity, in mass);
 
             transforms[i] = trans;
-            bees[i] = bee;
             flightPaths[i] = flightPath;
             velocities[i] = velocity;
 
