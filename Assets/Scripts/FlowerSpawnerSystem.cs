@@ -69,6 +69,19 @@ public partial struct FlowerSpawnerSystem : ISystem
 
             var transform = LocalTransform.FromPosition(pos).WithScale(flowerHeight);
             em.SetComponentData(e, transform);
+
+            var cubeEntity = em.Instantiate(flowerPrefabs.cubePrefab);
+            em.AddComponentData(cubeEntity, new Parent { Value = e });
+            em.SetComponentData(cubeEntity, LocalTransform.Identity);
+
+            em.AddComponentData(e, new RenderLodLink
+            {
+                CubeVisual = cubeEntity,
+                SwitchDistanceSq = 250000f,
+                IsFar = 0
+            });
+            em.AddComponentData(e, new RenderLodNeedsInit());
+            em.SetComponentEnabled<RenderLodNeedsInit>(e, true);
             
         }
 

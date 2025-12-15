@@ -124,13 +124,17 @@ public partial struct BeeDistanceLodSystem : ISystem
         ref BufferLookup<LinkedEntityGroup> linkedGroupLookup,
         ref ComponentLookup<MaterialMeshInfo> materialMeshInfoLookup)
     {
-        if (!linkedGroupLookup.HasBuffer(rootEntity)) return;
+        if (!linkedGroupLookup.HasBuffer(rootEntity))
+        {
+            if (materialMeshInfoLookup.HasComponent(rootEntity))
+                materialMeshInfoLookup.SetComponentEnabled(rootEntity, enabled);
+            return;
+        }
 
         var linkedGroup = linkedGroupLookup[rootEntity];
         for (int i = 0; i < linkedGroup.Length; i++)
         {
             var childEntity = linkedGroup[i].Value;
-            if (childEntity == rootEntity) continue;
             if (materialMeshInfoLookup.HasComponent(childEntity))
                 materialMeshInfoLookup.SetComponentEnabled(childEntity, enabled);
         }
@@ -191,13 +195,17 @@ public partial struct LodUpdateJob : IJobEntity
 
     private void SetChildVisualsEnabled(Entity rootEntity, bool enabled)
     {
-        if (!linkedGroupLookup.HasBuffer(rootEntity)) return;
+        if (!linkedGroupLookup.HasBuffer(rootEntity))
+        {
+            if (materialMeshInfoLookup.HasComponent(rootEntity))
+                materialMeshInfoLookup.SetComponentEnabled(rootEntity, enabled);
+            return;
+        }
 
         var linkedGroup = linkedGroupLookup[rootEntity];
         for (int i = 0; i < linkedGroup.Length; i++)
         {
             var childEntity = linkedGroup[i].Value;
-            if (childEntity == rootEntity) continue;
             if (materialMeshInfoLookup.HasComponent(childEntity))
                 materialMeshInfoLookup.SetComponentEnabled(childEntity, enabled);
         }
