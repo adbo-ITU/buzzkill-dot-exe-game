@@ -151,18 +151,17 @@ public partial struct BeeSpawnJob : IJobEntity
             ecb.AddComponent(chunkKey, cubeEntity, new Parent { Value = e });
             ecb.SetComponent(chunkKey, cubeEntity, LocalTransform.Identity);
 
-            // Add LOD link to bee
-            ecb.AddComponent(chunkKey, e, new BeeLodLink
+            // Add render LOD link to bee root (physics stays active, only visuals toggle)
+            ecb.AddComponent(chunkKey, e, new RenderLodLink
             {
-                NearRoot = e,
-                FarEntity = cubeEntity,
+                CubeVisual = cubeEntity,
                 SwitchDistanceSq = 10000f,  // 100m
-                IsFar = 0  // start near
+                IsFar = 0  // start near (bee visuals visible, cube hidden)
             });
 
             // Mark for initialization (cube rendering disabled on first LOD system pass)
-            ecb.AddComponent<BeeLodNeedsInit>(chunkKey, e);
-            ecb.SetComponentEnabled<BeeLodNeedsInit>(chunkKey, e, true);
+            ecb.AddComponent<RenderLodNeedsInit>(chunkKey, e);
+            ecb.SetComponentEnabled<RenderLodNeedsInit>(chunkKey, e, true);
         }
     }
 }
