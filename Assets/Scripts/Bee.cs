@@ -53,8 +53,3 @@ public struct FlightPath : IComponentData
     public float3 from;
     public float3 to;
 }
-
-public struct CameraData : IComponentData
-{
-    public float3 position;
-}

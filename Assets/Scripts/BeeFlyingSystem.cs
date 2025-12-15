@@ -17,7 +17,6 @@ partial struct BeeFlyingSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<SimulationConfig>();
-        state.RequireForUpdate<CameraData>();
 
         _flowerQuery = SystemAPI.QueryBuilder()
             .WithAll<TravellingToFlower, LocalTransform, FlightPath, PhysicsVelocity>()
@@ -32,7 +31,6 @@ partial struct BeeFlyingSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var config = SystemAPI.GetSingleton<SimulationConfig>().config;
-        var cameraPos = SystemAPI.GetSingleton<CameraData>().position;
 
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
 
@@ -50,7 +48,6 @@ partial struct BeeFlyingSystem : ISystem
                 {
                     ecb = ecb1,
                     deltaTime = deltaTime,
-                    cameraPosition = cameraPos,
                     TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
                     FlightPathHandle = SystemAPI.GetComponentTypeHandle<FlightPath>(),
                     VelocityHandle = SystemAPI.GetComponentTypeHandle<PhysicsVelocity>(),
@@ -61,7 +58,6 @@ partial struct BeeFlyingSystem : ISystem
                 {
                     ecb = ecb2,
                     deltaTime = deltaTime,
-                    cameraPosition = cameraPos,
                     TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
                     FlightPathHandle = SystemAPI.GetComponentTypeHandle<FlightPath>(),
                     VelocityHandle = SystemAPI.GetComponentTypeHandle<PhysicsVelocity>(),
@@ -81,7 +77,6 @@ partial struct BeeFlyingSystem : ISystem
                 {
                     ecb = ecb1,
                     deltaTime = deltaTime,
-                    cameraPosition = cameraPos,
                     TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
                     FlightPathHandle = SystemAPI.GetComponentTypeHandle<FlightPath>(),
                     VelocityHandle = SystemAPI.GetComponentTypeHandle<PhysicsVelocity>(),
@@ -92,7 +87,6 @@ partial struct BeeFlyingSystem : ISystem
                 {
                     ecb = ecb2,
                     deltaTime = deltaTime,
-                    cameraPosition = cameraPos,
                     TransformHandle = SystemAPI.GetComponentTypeHandle<LocalTransform>(),
                     FlightPathHandle = SystemAPI.GetComponentTypeHandle<FlightPath>(),
                     VelocityHandle = SystemAPI.GetComponentTypeHandle<PhysicsVelocity>(),
@@ -117,7 +111,7 @@ partial struct BeeFlyingSystem : ISystem
                 {
                     var reachedDest = BeeFlyingSystem.TravelBee(
                         ref trans.ValueRW, ref flightPath.ValueRW,
-                        deltaTime, ref velocity.ValueRW, cameraPos);
+                        deltaTime, ref velocity.ValueRW);
 
                     if (reachedDest)
                     {
@@ -145,11 +139,8 @@ partial struct BeeFlyingSystem : ISystem
     // All bees have mass=5, so InverseMass=0.2f - avoid per-entity PhysicsMass lookup
     private const float BeeInverseMass = 0.2f;
 
-    private const float CameraLodDistance = 100f;
-    private const float CameraLodDistanceSq = 100f * 100f;
-
     [BurstCompile]
-    public static bool TravelBee(ref LocalTransform trans, ref FlightPath flightPath, float deltaTime, ref PhysicsVelocity velocity, in float3 cameraPos)
+    public static bool TravelBee(ref LocalTransform trans, ref FlightPath flightPath, float deltaTime, ref PhysicsVelocity velocity)
     {
         var between = flightPath.to - trans.Position;
         var distanceSq = math.lengthsq(between);
@@ -167,16 +158,19 @@ partial struct BeeFlyingSystem : ISystem
         var direction = between * invDistance;
         var straightVel = direction * flightPath.speed * 5f;
 
-        var camDistanceSq = math.lengthsq(trans.Position - cameraPos);
-        var isNearCamera = camDistanceSq < CameraLodDistanceSq;
-
-        // Only compute wiggle when close to camera AND distance to target is large
-        if (isNearCamera && distance >= 2f)
+        // Only compute wiggle when distance >= 2f (skip expensive sin/cos/normalize when near destination)
+        if (distance >= 2f)
         {
             var orthogonal = math.normalize(math.cross(direction, math.up()));
             var wiggleFactor = deltaTime * BeeInverseMass;
+            // Use sincos for the vertical wiggle angle, derive horizontal from different frequency
             math.sincos(flightPath.time * 7f, out var sinVertical, out var cosVertical);
-            var cos14 = cosVertical * cosVertical - sinVertical * sinVertical;
+            // cos(15t) = cos(7t + 8t) - use angle addition or just compute separately
+            // For 15f = 7f * 2 + 1f, use double angle: sin(2x) = 2*sin(x)*cos(x)
+            var sin14 = 2f * sinVertical * cosVertical;  // sin(14t)
+            var cos14 = cosVertical * cosVertical - sinVertical * sinVertical;  // cos(14t)
+            // cos(15t) = cos(14t + t) = cos(14t)*cos(t) - sin(14t)*sin(t)
+            // Approximate: just use cos(14t) which is close enough visually
             var horizontalWiggle = cos14 * 125f * wiggleFactor;
             var verticalWiggle = sinVertical * 50f * wiggleFactor;
 
@@ -195,13 +189,10 @@ partial struct BeeFlyingSystem : ISystem
         velocity.Angular = float3.zero;
         velocity.Linear = math.lerp(velocity.Linear, desiredVel, lerpFactor);
 
-        // Only update rotation when close to camera (nlerp is much faster than slerp, visually similar for small angles)
-        if (isNearCamera)
-        {
-            var targetRotation = quaternion.LookRotationSafe(direction, math.up());
-            var t = lerpFactor * 6.67f;
-            trans.Rotation = math.normalize(new quaternion(math.lerp(trans.Rotation.value, targetRotation.value, t)));
-        }
+        // Make the bee face its movement direction (nlerp is much faster than slerp, visually similar for small angles)
+        var targetRotation = quaternion.LookRotationSafe(direction, math.up());
+        var t = lerpFactor * 6.67f;
+        trans.Rotation = math.normalize(new quaternion(math.lerp(trans.Rotation.value, targetRotation.value, t)));
 
         return false;
     }
@@ -212,7 +203,6 @@ public struct BeeToFlowerChunkJob : IJobChunk
 {
     public EntityCommandBuffer.ParallelWriter ecb;
     public float deltaTime;
-    public float3 cameraPosition;
 
     [NativeDisableContainerSafetyRestriction]
     public ComponentTypeHandle<LocalTransform> TransformHandle;
@@ -237,7 +227,7 @@ public struct BeeToFlowerChunkJob : IJobChunk
             var flightPath = flightPaths[i];
             var velocity = velocities[i];
 
-            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref flightPath, deltaTime, ref velocity, cameraPosition);
+            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref flightPath, deltaTime, ref velocity);
 
             transforms[i] = trans;
             flightPaths[i] = flightPath;
@@ -257,7 +247,6 @@ public struct BeeToHiveChunkJob : IJobChunk
 {
     public EntityCommandBuffer.ParallelWriter ecb;
     public float deltaTime;
-    public float3 cameraPosition;
 
     [NativeDisableContainerSafetyRestriction]
     public ComponentTypeHandle<LocalTransform> TransformHandle;
@@ -282,7 +271,7 @@ public struct BeeToHiveChunkJob : IJobChunk
             var flightPath = flightPaths[i];
             var velocity = velocities[i];
 
-            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref flightPath, deltaTime, ref velocity, cameraPosition);
+            var reachedDest = BeeFlyingSystem.TravelBee(ref trans, ref flightPath, deltaTime, ref velocity);
 
             transforms[i] = trans;
             flightPaths[i] = flightPath;
