@@ -143,6 +143,9 @@ public partial struct BeeSpawnJob : IJobEntity
                 Linear  = 0.0f,
                 Angular = 0.0f
             });
+
+            // LOD state
+            ecb.AddComponent(chunkKey, e, new BeeLODState());
         }
     }
 }

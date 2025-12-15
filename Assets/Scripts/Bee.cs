@@ -25,6 +25,7 @@ class BeeBaker : Baker<Bee>
             homeHive = Entity.Null
         });
         AddComponent(entity, new TravellingToFlower());
+        AddComponent(entity, new BeeLODState());
     }
 }
 
@@ -52,4 +53,11 @@ public struct FlightPath : IComponentData
     public float speed;
     public float3 from;
     public float3 to;
+}
+
+public struct BeeLODState : IComponentData
+{
+    public bool isLowPoly;
+    public int originalMesh;
+    public int originalMaterial;
 }
