@@ -373,8 +373,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   beePrefab: {fileID: 7738423416188057354, guid: 524dd7cc220ae472cb379b27a455e16d, type: 3}
-  lowPolyPrefab: {fileID: 4615560902193265911, guid: a1c51983d2f3643f49870c8dadadc872, type: 3}
-  lodDistance: 100
 --- !u!4 &2039319760
 Transform:
   m_ObjectHideFlags: 0
