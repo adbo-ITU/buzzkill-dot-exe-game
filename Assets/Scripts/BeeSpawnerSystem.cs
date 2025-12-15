@@ -144,22 +144,16 @@ public partial struct BeeSpawnJob : IJobEntity
                 Angular = 0.0f
             });
 
-            // ===== LOD: Instantiate cube (far LOD) =====
             var cubeEntity = ecb.Instantiate(chunkKey, spawner.cubePrefab);
-
-            // Parent cube to bee for automatic transform following
             ecb.AddComponent(chunkKey, cubeEntity, new Parent { Value = e });
             ecb.SetComponent(chunkKey, cubeEntity, LocalTransform.Identity);
 
-            // Add render LOD link to bee root (physics stays active, only visuals toggle)
             ecb.AddComponent(chunkKey, e, new RenderLodLink
             {
                 CubeVisual = cubeEntity,
-                SwitchDistanceSq = 10000f,  // 100m
-                IsFar = 0  // start near (bee visuals visible, cube hidden)
+                SwitchDistanceSq = 250000f,
+                IsFar = 0
             });
-
-            // Mark for initialization (cube rendering disabled on first LOD system pass)
             ecb.AddComponent<RenderLodNeedsInit>(chunkKey, e);
             ecb.SetComponentEnabled<RenderLodNeedsInit>(chunkKey, e, true);
         }
