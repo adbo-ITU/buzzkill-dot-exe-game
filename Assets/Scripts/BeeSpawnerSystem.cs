@@ -18,7 +18,6 @@ public partial struct BeeSpawnerSystem : ISystem
         state.RequireForUpdate<HiveData>();
         state.RequireForUpdate<HiveManager>();
         state.RequireForUpdate<SimulationConfig>();
-        // Note: BeeLodConfig is optional - LOD setup happens in BeeLodSetupSystem after spawning
     }
 
     [BurstCompile]
