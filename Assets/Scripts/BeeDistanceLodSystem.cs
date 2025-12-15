@@ -26,26 +26,21 @@ public partial struct BeeDistanceLodSystem : ISystem
         state.RequireForUpdate<RenderLodLink>();
     }
 
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         var cameraPosition = SystemAPI.GetSingleton<CameraPosition>().Value;
 
         // Phase 1: Initialize newly spawned bees (disable cube rendering initially)
-        int initCount = InitializeNewBees(ref state);
+        InitializeNewBees(ref state);
 
         // Phase 2: Update LOD based on distance
-        int switchCount = UpdateLodDistances(ref state, cameraPosition);
-
-        // Debug output (remove after testing)
-        if (initCount > 0 || switchCount > 0)
-        {
-            UnityEngine.Debug.Log($"[LOD] Camera at {cameraPosition}, Init: {initCount}, Switches: {switchCount}");
-        }
+        UpdateLodDistances(ref state, cameraPosition);
     }
 
-    private int InitializeNewBees(ref SystemState state)
+    [BurstCompile]
+    private void InitializeNewBees(ref SystemState state)
     {
-        int count = 0;
         // Process bees that need initialization (just spawned)
         // Disable cube's MaterialMeshInfo since we start in near LOD
         foreach (var (lodLink, needsInit, entity) in
@@ -62,14 +57,12 @@ public partial struct BeeDistanceLodSystem : ISystem
 
             // Clear initialization flag - done processing this bee
             needsInit.ValueRW = false;
-            count++;
         }
-        return count;
     }
 
-    private int UpdateLodDistances(ref SystemState state, float3 cameraPosition)
+    [BurstCompile]
+    private void UpdateLodDistances(ref SystemState state, float3 cameraPosition)
     {
-        int switchCount = 0;
         // Get lookups for LinkedEntityGroup and MaterialMeshInfo
         var linkedGroupLookup = SystemAPI.GetBufferLookup<LinkedEntityGroup>(true);
         var materialMeshInfoLookup = SystemAPI.GetComponentLookup<MaterialMeshInfo>(false);
@@ -90,7 +83,6 @@ public partial struct BeeDistanceLodSystem : ISystem
 
             // Update state
             lodLink.ValueRW.IsFar = shouldBeFar ? (byte)1 : (byte)0;
-            switchCount++;
 
             var cubeEntity = lodLink.ValueRO.CubeVisual;
 
@@ -113,7 +105,6 @@ public partial struct BeeDistanceLodSystem : ISystem
                 }
             }
         }
-        return switchCount;
     }
 
     [BurstCompile]
