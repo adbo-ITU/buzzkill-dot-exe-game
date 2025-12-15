@@ -143,6 +143,26 @@ public partial struct BeeSpawnJob : IJobEntity
                 Linear  = 0.0f,
                 Angular = 0.0f
             });
+
+            // ===== LOD: Instantiate cube (far LOD) =====
+            var cubeEntity = ecb.Instantiate(chunkKey, spawner.cubePrefab);
+
+            // Parent cube to bee for automatic transform following
+            ecb.AddComponent(chunkKey, cubeEntity, new Parent { Value = e });
+            ecb.SetComponent(chunkKey, cubeEntity, LocalTransform.Identity);
+
+            // Add LOD link to bee
+            ecb.AddComponent(chunkKey, e, new BeeLodLink
+            {
+                NearRoot = e,
+                FarEntity = cubeEntity,
+                SwitchDistanceSq = 10000f,  // 100m
+                IsFar = 0  // start near
+            });
+
+            // Mark for initialization (cube rendering disabled on first LOD system pass)
+            ecb.AddComponent<BeeLodNeedsInit>(chunkKey, e);
+            ecb.SetComponentEnabled<BeeLodNeedsInit>(chunkKey, e, true);
         }
     }
 }
