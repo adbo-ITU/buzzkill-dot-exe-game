@@ -19,7 +19,7 @@ public struct FlowerManager : IComponentData
     }
     
     [BurstCompile]
-    public static float2 GetRandomPointInCircle(ref Random rng, float radius)
+    public static void GetRandomPointInCircle(ref Random rng, float radius, out float2 result)
     {
         float2 point;
         do
@@ -29,7 +29,7 @@ public struct FlowerManager : IComponentData
                 rng.NextFloat(-radius, radius)
             );
         } while (math.lengthsq(point) > radius * radius);
-    
-        return point;
+
+        result = point;
     }
 }

@@ -149,7 +149,7 @@ partial struct BeeFlyingSystem : ISystem
     private const float CameraLodDistanceSq = 100f * 100f;
 
     [BurstCompile]
-    public static bool TravelBee(ref LocalTransform trans, ref FlightPath flightPath, float deltaTime, ref PhysicsVelocity velocity, float3 cameraPos)
+    public static bool TravelBee(ref LocalTransform trans, ref FlightPath flightPath, float deltaTime, ref PhysicsVelocity velocity, in float3 cameraPos)
     {
         var between = flightPath.to - trans.Position;
         var distanceSq = math.lengthsq(between);
