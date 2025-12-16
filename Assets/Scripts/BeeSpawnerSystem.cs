@@ -143,6 +143,19 @@ public partial struct BeeSpawnJob : IJobEntity
                 Linear  = 0.0f,
                 Angular = 0.0f
             });
+
+            var cubeEntity = ecb.Instantiate(chunkKey, spawner.cubePrefab);
+            ecb.AddComponent(chunkKey, cubeEntity, new Parent { Value = e });
+            ecb.SetComponent(chunkKey, cubeEntity, LocalTransform.Identity);
+
+            ecb.AddComponent(chunkKey, e, new RenderLodLink
+            {
+                CubeVisual = cubeEntity,
+                SwitchDistanceSq = 250000f,
+                IsFar = 0
+            });
+            ecb.AddComponent<RenderLodNeedsInit>(chunkKey, e);
+            ecb.SetComponentEnabled<RenderLodNeedsInit>(chunkKey, e, true);
         }
     }
 }

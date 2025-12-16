@@ -5,6 +5,7 @@ using UnityEngine;
 public class BeeSpawnerAuthoring : MonoBehaviour
 {
     public GameObject beePrefab;
+    public GameObject cubePrefab;
 
     class Baker : Baker<BeeSpawnerAuthoring>
     {
@@ -14,6 +15,7 @@ public class BeeSpawnerAuthoring : MonoBehaviour
             var spawner = new BeeSpawner
             {
                 beePrefab = GetEntity(authoring.beePrefab, TransformUsageFlags.Dynamic),
+                cubePrefab = GetEntity(authoring.cubePrefab, TransformUsageFlags.Dynamic),
             };
             AddComponent(entity, spawner);
         }
@@ -23,4 +25,5 @@ public class BeeSpawnerAuthoring : MonoBehaviour
 public struct BeeSpawner : IComponentData
 {
     public Entity beePrefab;
+    public Entity cubePrefab;
 }

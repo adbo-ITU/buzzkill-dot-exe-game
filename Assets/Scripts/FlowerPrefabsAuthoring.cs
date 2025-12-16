@@ -8,6 +8,7 @@ public class FlowerPrefabsAuthoring : MonoBehaviour
     public GameObject flowerPrefabC;
     public GameObject flowerPrefabD;
     public GameObject flowerPrefabE;
+    public GameObject cubePrefab;
 
     class Baker : Baker<FlowerPrefabsAuthoring>
     {
@@ -21,6 +22,7 @@ public class FlowerPrefabsAuthoring : MonoBehaviour
                 flowerPrefabC = GetEntity(authoring.flowerPrefabC, TransformUsageFlags.Dynamic),
                 flowerPrefabD = GetEntity(authoring.flowerPrefabD, TransformUsageFlags.Dynamic),
                 flowerPrefabE = GetEntity(authoring.flowerPrefabE, TransformUsageFlags.Dynamic),
+                cubePrefab = GetEntity(authoring.cubePrefab, TransformUsageFlags.Dynamic),
             };
             AddComponent(entity, spawner);
         }
@@ -34,4 +36,5 @@ public struct FlowerPrefabs : IComponentData
     public Entity flowerPrefabC;
     public Entity flowerPrefabD;
     public Entity flowerPrefabE;
+    public Entity cubePrefab;
 }
