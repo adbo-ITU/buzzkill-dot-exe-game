@@ -542,6 +542,18 @@ PrefabInstance:
       value: BeeLodCube
       objectReference: {fileID: 0}
     - target: {fileID: 7946900100003576602, guid: 27fc16a38957d494f8396a3aafe6a1bf, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7946900100003576602, guid: 27fc16a38957d494f8396a3aafe6a1bf, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7946900100003576602, guid: 27fc16a38957d494f8396a3aafe6a1bf, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7946900100003576602, guid: 27fc16a38957d494f8396a3aafe6a1bf, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
