@@ -13,6 +13,9 @@ public partial struct DebugSystem : ISystem
 
     public void OnUpdate(ref SystemState state)
     {
+        state.Enabled = false;
+        return;
+        
         Entity debugEntity;
         if (!SystemAPI.TryGetSingletonEntity<DebugData>(out debugEntity))
         {
