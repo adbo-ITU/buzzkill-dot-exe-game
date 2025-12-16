@@ -102,8 +102,8 @@ public partial struct BeeSpawnJob : IJobEntity
                 },
                 new CollisionFilter
                 {
-                    BelongsTo = 0u,      // everything, adjust if you want layers
-                    CollidesWith = 0u,   // collide with everything
+                    BelongsTo = ~0u,      // everything, adjust if you want layers
+                    CollidesWith = ~0u,   // collide with everything
                     GroupIndex = 0
                 },
                 new Material
